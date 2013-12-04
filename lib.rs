@@ -26,3 +26,6 @@ pub mod aux;
 
 #[path = "lualib.rs"]
 pub mod lib;
+
+#[cfg(test)]
+mod tests;
