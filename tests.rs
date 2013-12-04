@@ -17,25 +17,27 @@ extern "C" fn alloc_helper(_ud: *mut libc::c_void, ptr: *mut libc::c_void, _osiz
 }
 
 // panic function should fail!() so Lua doesn't abort
-extern "C" fn panic_helper(_S: *mut raw::lua_State) -> libc::c_int {
+extern "C" fn panic_helper(_L: *mut raw::lua_State) -> libc::c_int {
     fail!("lua error");
 }
 
 #[test]
 fn test_lua_newstate() {
     unsafe {
-        let s = raw::lua_newstate(alloc_helper, ptr::mut_null());
-        raw::lua_pushinteger(s, 42);
-        raw::lua_close(s);
+        let L = raw::lua_newstate(alloc_helper, ptr::mut_null());
+        raw::lua_atpanic(L, panic_helper);
+        raw::lua_pushinteger(L, 42);
+        raw::lua_close(L);
     }
 }
 
 #[test]
 fn test_luaL_newstate() {
     unsafe {
-        let s = aux::raw::luaL_newstate();
-        raw::lua_pushinteger(s, 42);
-        raw::lua_close(s);
+        let L = aux::raw::luaL_newstate();
+        raw::lua_atpanic(L, panic_helper);
+        raw::lua_pushinteger(L, 42);
+        raw::lua_close(L);
     }
 }
 
@@ -43,9 +45,29 @@ fn test_luaL_newstate() {
 #[should_fail]
 fn test_lua_error() {
     unsafe {
-        let s = aux::raw::luaL_newstate();
-        raw::lua_atpanic(s, panic_helper);
-        raw::lua_pushinteger(s, 42);
-        raw::lua_error(s);
+        let L = aux::raw::luaL_newstate();
+        raw::lua_atpanic(L, panic_helper);
+        raw::lua_pushinteger(L, 42);
+        raw::lua_error(L);
+    }
+}
+
+#[test]
+fn test_dostring() {
+    unsafe {
+        let L = aux::raw::luaL_newstate();
+        raw::lua_atpanic(L, panic_helper);
+        let s = "function foo(x,y) return x+y end";
+        let ret = s.with_c_str(|s| aux::raw::luaL_dostring(L, s));
+        assert_eq!(ret, 0);
+        "foo".with_c_str(|s| raw::lua_getglobal(L, s));
+
+        raw::lua_pushinteger(L, 5);
+        raw::lua_pushinteger(L, 3);
+
+        raw::lua_call(L, 2, 1);
+        let val = raw::lua_tointeger(L, -1);
+        assert_eq!(val, 8);
+        raw::lua_close(L);
     }
 }
