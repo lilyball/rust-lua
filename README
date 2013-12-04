@@ -1,0 +1,12 @@
+# rust-lua
+
+Copyright 2013 Kevin Ballard
+
+## Description
+
+This is a set of Rust bindings to Lua 5.1.
+The goal is to provide a (relatively) safe interface to Lua that closely
+mirrors its C API.
+
+At the moment, only the raw C bindings have been defined. Safe(-ish) wrappers
+are forthcoming, if I ever get around to it.
