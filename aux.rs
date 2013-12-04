@@ -115,20 +115,12 @@ pub mod raw {
 
     #[inline(always)]
     pub unsafe fn luaL_dofile(L: *mut lua_State, filename: *libc::c_char) -> c_int {
-        let mut ret = luaL_loadfile(L, filename);
-        if ret == 0 {
-            ret = raw::lua_pcall(L, 0, MULTRET, 0);
-        }
-        ret
+        ((luaL_loadfile(L, filename) != 0) || (raw::lua_pcall(L, 0, MULTRET, 0) != 0)) as c_int
     }
 
     #[inline(always)]
     pub unsafe fn luaL_dostring(L: *mut lua_State, s: *libc::c_char) -> c_int {
-        let mut ret = luaL_loadstring(L, s);
-        if ret == 0 {
-            ret = raw::lua_pcall(L, 0, MULTRET, 0);
-        }
-        ret
+        ((luaL_loadstring(L, s) != 0) || (raw::lua_pcall(L, 0, MULTRET, 0) != 0)) as c_int
     }
 
     #[inline(always)]
