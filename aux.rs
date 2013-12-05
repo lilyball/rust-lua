@@ -65,9 +65,6 @@ pub mod raw {
 
         pub fn luaL_gsub(L: *mut lua_State, s: *libc::c_char, p: *libc::c_char, r: *libc::c_char)
                         -> *libc::c_char;
-
-        pub fn luaL_findtable(L: *mut lua_State, idx: c_int, fname: *libc::c_char, szhint: c_int)
-                             -> *libc::c_char;
     }
 
     // Some useful functions (macros in C)
