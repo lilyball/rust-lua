@@ -12,7 +12,7 @@
 
 use std::libc;
 use std::libc::c_int;
-use std::ptr;
+use std::{ptr, str, vec};
 
 #[link(name = "lua.5.1")]
 extern {}
@@ -45,6 +45,8 @@ pub type Type = Type::Type;
 pub mod Type {
     //! Lua value type mod
     use raw;
+    use std::{libc, ptr, str};
+
     /// Lua value types
     pub enum Type {
         /// Type for nil
@@ -65,6 +67,16 @@ pub mod Type {
         Userdata = raw::LUA_TUSERDATA,
         /// Type for threads
         Thread = raw::LUA_TTHREAD
+    }
+
+    impl Type {
+        /// Returns the name of the type
+        pub fn name(&self) -> &'static str {
+            unsafe {
+                let s = raw::lua_typename(ptr::mut_null(), *self as libc::c_int);
+                str::raw::c_str_to_static_slice(s)
+            }
+        }
     }
 }
 
@@ -238,12 +250,17 @@ impl State {
                     s.unwrap_or_default() // default will be ~""
                 }
                 Type::String => {
-                    let s = self.tostring_unchecked(-1);
+                    let s = self.tostring_unchecked(idx);
                     s.unwrap_or_default()
                 }
-                _ => {
-                    // TODO: flesh this out
-                    ~"TODO"
+                Type::LightUserdata |
+                Type::Userdata |
+                Type::Table |
+                Type::Thread |
+                Type::Function => {
+                    let s = self.typename(idx);
+                    let p = self.topointer(idx);
+                    format!("<{} {:p}>", s, p)
                 }
             })
         }
@@ -337,14 +354,26 @@ impl State {
             raw::LUA_TSTRING        => Some(Type::String),
             raw::LUA_TTABLE         => Some(Type::Table),
             raw::LUA_TFUNCTION      => Some(Type::Function),
-            raw::LUA_TUSERDATA       => Some(Type::Userdata),
+            raw::LUA_TUSERDATA      => Some(Type::Userdata),
             raw::LUA_TTHREAD        => Some(Type::Thread),
 
             _ => fail!("Unknown return value from lua_type")
         }
     }
 
-    // typename
+    /// Returns the name of the type of the value at the given acceptable index.
+    pub fn typename(&mut self, idx: i32) -> &'static str {
+        #[inline];
+        self.check_acceptable(idx);
+        unsafe { self.typename_unchecked(idx) }
+    }
+
+    /// Unchecked variant of typename()
+    pub unsafe fn typename_unchecked(&mut self, idx: i32) -> &'static str {
+        #[inline];
+        let s = aux::raw::luaL_typename(self.L, idx as c_int);
+        str::raw::c_str_to_static_slice(s)
+    }
 
     // equal
     // rawequal
@@ -399,8 +428,8 @@ impl State {
         if s.is_null() {
             None
         } else {
-            std::vec::raw::buf_as_slice(s as *u8, sz as uint, |b| {
-                std::str::from_utf8_opt(b).map(|s| std::cast::transmute::<&str, &'a str>(s))
+            vec::raw::buf_as_slice(s as *u8, sz as uint, |b| {
+                str::from_utf8_opt(b).map(|s| std::cast::transmute::<&str, &'a str>(s))
             })
         }
     }
@@ -409,7 +438,20 @@ impl State {
     // tocfunction
     // touserdata
     // tothread
-    // topointer
+
+    /// Converts the value at the given acceptable index to a pointer.
+    /// The value can be a userdata, a table, a thread, or a function.
+    pub fn topointer(&mut self, idx: i32) -> *libc::c_void {
+        #[inline];
+        self.check_acceptable(idx);
+        unsafe { self.topointer_unchecked(idx) }
+    }
+
+    /// Unchecked variant of topointer()
+    pub unsafe fn topointer_unchecked(&mut self, idx: i32) -> *libc::c_void {
+        #[inline];
+        raw::lua_topointer(self.L, idx as c_int)
+    }
 
     /* Push functions (Rust -> stack) */
 
