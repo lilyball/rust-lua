@@ -270,3 +270,7 @@ pub unsafe fn lua_tostring(L: *mut lua_State, i: c_int) -> *libc::c_char {
 extern {
     pub fn lua_setlevel(from: *mut lua_State, to: *mut lua_State);
 }
+
+#[cfg(test)]
+#[path = "rawtests.rs"]
+mod tests;
