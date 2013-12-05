@@ -33,3 +33,24 @@ fn test_errorstr() {
         }
     }
 }
+
+#[test]
+fn test_describe() {
+    let mut s = State::new();
+
+    assert_eq!(s.typename(1), "no value");
+    s.pushnil();
+    assert_eq!(s.typename(-1), "nil");
+    s.pushinteger(42);
+    assert_eq!(s.typename(-1), "number");
+    s.pushstring("test");
+    assert_eq!(s.typename(-1), "string");
+    s.pushboolean(true);
+    assert_eq!(s.typename(-1), "boolean");
+    s.pushcfunction(dummy);
+    assert_eq!(s.typename(-1), "function");
+
+    extern "C" fn dummy(_L: *mut ::raw::lua_State) -> ::std::libc::c_int {
+        0
+    }
+}

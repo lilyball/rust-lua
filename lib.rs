@@ -28,6 +28,21 @@ pub static MULTRET: i32 = raw::MULTRET as i32;
 /// Minimum Lua stack available to a C function
 pub static MINSTACK: i32 = 20;
 
+/// Pseudo-index for the registry
+pub static REGISTRYINDEX: i32 = raw::LUA_REGISTRYINDEX as i32;
+/// Pseudo-index for the thread environment
+pub static GLOBALSINDEX: i32 = raw::LUA_GLOBALSINDEX as i32;
+/// Pseudo-index for the running C function environment
+pub static ENVIRONINDEX: i32 = raw::LUA_ENVIRONINDEX as i32;
+
+/// Calculates the pseudo-index for the upvalue at the given index.
+/// Any index in the range [1,256] produces an acceptable index.
+/// Any index outside that range will likely produce an unacceptable index.
+pub fn upvalueindex(n: i32) -> i32 {
+    #[inline];
+    raw::lua_upvalueindex(n as c_int) as i32
+}
+
 #[allow(missing_doc)]
 pub mod raw;
 #[allow(missing_doc)]
@@ -111,6 +126,9 @@ pub mod GC {
         SetStepMul = raw::LUA_GCSETSTEPMUL
     }
 }
+
+/// Type that represents C functions that can be registered with Lua.
+pub type CFunction = raw::lua_CFunction;
 
 /// The Lua state.
 /// Every Lua thread is represented by a separate State.
@@ -455,26 +473,94 @@ impl State {
 
     /* Push functions (Rust -> stack) */
 
-    // pushnil
-    // pushnumber
-    // pushinteger
+    /// Pushes a nil value onto the stack.
+    pub fn pushnil(&mut self) {
+        #[inline];
+        self.checkstack(1);
+        unsafe { self.pushnil_unchecked() }
+    }
 
-    /// Pushes an integer onto the stack
+    /// Unchecked variant of pushnil().
+    /// Skips the call to checkstack().
+    pub unsafe fn pushnil_unchecked(&mut self) {
+        #[inline];
+        raw::lua_pushnil(self.L)
+    }
+
+    /// Pushes a number with value `n` onto the stack
+    pub fn pushnumber(&mut self, n: f64) {
+        #[inline];
+        self.checkstack(1);
+        unsafe { self.pushnumber_unchecked(n) }
+    }
+
+    /// Unchecked variant of pushnumber().
+    /// Skips the call to checkstack().
+    pub unsafe fn pushnumber_unchecked(&mut self, n: f64) {
+        #[inline];
+        raw::lua_pushnumber(self.L, n as raw::lua_Number)
+    }
+
+    /// Pushes a number with value `n` onto the stack.
     pub fn pushinteger(&mut self, n: int) {
         #[inline];
-        unsafe { raw::lua_pushinteger(self.L, n as raw::lua_Integer) }
+        self.checkstack(1);
+        unsafe { self.pushinteger_unchecked(n) }
+    }
+
+    /// Unchecked variant of pushinteger().
+    /// Skips the call to checkstack().
+    pub unsafe fn pushinteger_unchecked(&mut self, n: int) {
+        #[inline];
+        raw::lua_pushinteger(self.L, n as raw::lua_Integer)
     }
 
     /// Pushes a string onto the stack
     pub fn pushstring(&mut self, s: &str) {
         #[inline];
+        self.checkstack(1);
+        unsafe { self.pushstring_unchecked(s) }
+    }
+
+    /// Unchecked variant of pushstring().
+    /// Skips the call to checkstack().
+    pub unsafe fn pushstring_unchecked(&mut self, s: &str) {
+        #[inline];
         s.as_imm_buf(|buf, len| {
-            unsafe { raw::lua_pushlstring(self.L, buf as *libc::c_char, len as libc::size_t) }
+            raw::lua_pushlstring(self.L, buf as *libc::c_char, len as libc::size_t)
         })
     }
 
-    // pushcclosure
-    // pushboolean
+    /// Pushes a new C closure onto the stack.
+    pub fn pushcclosure(&mut self, f: CFunction, n: i32) {
+        #[inline];
+        if n == 0 {
+            self.checkstack(1);
+        }
+        unsafe { self.pushcclosure_unchecked(f, n) }
+    }
+
+    /// Unchecked variant of pushcclosure().
+    /// Skips the call to checkstack().
+    pub unsafe fn pushcclosure_unchecked(&mut self, f: CFunction, n: i32) {
+        #[inline];
+        raw::lua_pushcclosure(self.L, f, n as c_int)
+    }
+
+    /// Pushes a boolean value onto the stack.
+    pub fn pushboolean(&mut self, b: bool) {
+        #[inline];
+        self.checkstack(1);
+        unsafe { self.pushboolean_unchecked(b) }
+    }
+
+    /// Unchecked variant of pushboolean().
+    /// Skips the call to checkstack().
+    pub unsafe fn pushboolean_unchecked(&mut self, b: bool) {
+        #[inline];
+        raw::lua_pushboolean(self.L, b as c_int)
+    }
+
     // pushlightuserdata
     // pushtthread
 
@@ -576,7 +662,21 @@ impl State {
 
     // newtable
     // register
-    // pushcfunction
+
+    /// Pushes a C function onto the stack.
+    pub fn pushcfunction(&mut self, f: CFunction) {
+        #[inline];
+        self.checkstack(1);
+        unsafe { self.pushcfunction_unchecked(f) }
+    }
+
+    /// Unchecked variant of pushcfunction().
+    /// Skips the call to checkstack().
+    pub unsafe fn pushcfunction_unchecked(&mut self, f: CFunction) {
+        #[inline];
+        raw::lua_pushcfunction(self.L, f)
+    }
+
     // strlen
     // isfunction
     // istable
