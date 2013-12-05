@@ -41,7 +41,7 @@ pub static LUA_TTHREAD:        c_int = 8;
 
 pub type lua_State = libc::c_void;
 
-pub type lua_CFunction = extern "C" fn(L: *mut lua_State) -> c_int;
+pub type lua_CFunction = extern "C" unsafe fn(L: *mut lua_State) -> c_int;
 
 /// Function type for reading blocks when loading Lua chunks.
 pub type lua_Reader = extern "C" fn(L: *mut lua_State, ud: *mut libc::c_void,

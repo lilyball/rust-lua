@@ -63,6 +63,7 @@ pub mod Type {
     use std::{libc, ptr, str};
 
     /// Lua value types
+    #[deriving(Clone,Eq)]
     pub enum Type {
         /// Type for nil
         Nil = raw::LUA_TNIL,
@@ -215,22 +216,34 @@ impl State {
     fn check_acceptable(&mut self, idx: i32) {
         #[inline];
         if idx > 0 {
-            assert!(idx <= self.stackspace, "Index {} is unacceptable (stack space is {})",
+            assert!(idx <= self.stackspace, "index {} is not acceptable (stack space is {})",
                     idx, self.stackspace);
         } else if idx < 0 {
             self.check_valid(idx);
         } else {
-            fail!("Index 0 is unacceptable");
+            fail!("index 0 is not acceptable");
         }
     }
 
     fn check_valid(&mut self, idx: i32) {
         #[inline];
-        if idx == 0 {
-            fail!("Index 0 is not valid");
+        match idx {
+            0 => fail!("index 0 is not valid"),
+            GLOBALSINDEX => (),
+            REGISTRYINDEX => (),
+            ENVIRONINDEX => (),
+            _ if idx < GLOBALSINDEX => {
+                // we can't actually test for upvalue validity
+                // at least not without using lua_Debug, which seems excessive.
+                // However, I think that invalid but acceptable upvalues are treated as nil
+                let upvalidx = GLOBALSINDEX - idx;
+                assert!(upvalidx <= 256, "upvalue index {} is out of range", upvalidx);
+            }
+            _ => {
+                let top = self.gettop();
+                assert!(idx.abs() <= top, "index {} is not valid (stack top is {})", idx, top);
+            }
         }
-        let top = unsafe { raw::lua_gettop(self.L) } as i32;
-        assert!(idx.abs() <= top, "Index {} is not valid (stack top is {})", idx, top);
     }
 
     /// Returns the textual description of the value at the given acceptable index.
@@ -566,8 +579,33 @@ impl State {
 
     /* Get functions (Lua -> stack) */
 
-    // gettable
-    // getfield
+    /// Pushes onto the stack the value t[k], where t is the value at the given
+    /// valid index and k is the value at the top of the stack.
+    pub fn gettable(&mut self, idx: i32) {
+        #[inline];
+        self.check_valid(idx);
+        assert!(self.gettop() >= 1, "stack underflow");
+        unsafe { self.gettable_unchecked(idx) }
+    }
+
+    /// Unchecked variant of gettable().
+    pub unsafe fn gettable_unchecked(&mut self, idx: i32) {
+        #[inline];
+        raw::lua_gettable(self.L, idx as c_int)
+    }
+
+    /// Pushes onto the stack the value t[k], where t is the value at the given valid index.
+    pub fn getfield(&mut self, idx: i32, k: &str) {
+        #[inline];
+        self.check_valid(idx);
+        unsafe { self.getfield_unchecked(idx, k) }
+    }
+
+    /// Unchecked variant of getfield().
+    pub unsafe fn getfield_unchecked(&mut self, idx: i32, k: &str) {
+        #[inline];
+        k.with_c_str(|s| raw::lua_getfield(self.L, idx as c_int, s))
+    }
     // rawget
     // rawgeti
     // createtable
@@ -586,7 +624,18 @@ impl State {
 
     /* `load` and `call` functions (load and run Lua code) */
 
-    // call
+    /// Calls a function.
+    pub fn call(&mut self, nargs: i32, nresults: i32) {
+        #[inline];
+        assert!(self.gettop() >= nargs, "stack underflow");
+        unsafe { self.call_unchecked(nargs, nresults) }
+    }
+
+    /// Unchecked variant of call().
+    pub unsafe fn call_unchecked(&mut self, nargs: i32, nresults: i32) {
+        #[inline];
+        raw::lua_call(self.L, nargs as c_int, nresults as c_int)
+    }
     // pcall
     // cpcall
     // load
@@ -692,6 +741,168 @@ impl State {
     /* Hack */
 
     // setlevel
+}
+
+/// Name for the coroutine lib
+pub static COLIBNAME: &'static str = lib::raw::LUA_COLIBNAME;
+/// Name for the table lib
+pub static TABLIBNAME: &'static str = lib::raw::LUA_TABLIBNAME;
+/// Name for the io lib
+pub static IOLIBNAME: &'static str = lib::raw::LUA_IOLIBNAME;
+/// Name for the os lib
+pub static OSLIBNAME: &'static str = lib::raw::LUA_OSLIBNAME;
+/// Name for the string lib
+pub static STRLIBNAME: &'static str = lib::raw::LUA_STRLIBNAME;
+/// Name for the math lib
+pub static MATHLIBNAME: &'static str = lib::raw::LUA_MATHLIBNAME;
+/// Name for the debug lib
+pub static DBLIBNAME: &'static str = lib::raw::LUA_DBLIBNAME;
+/// Name for the package lib
+pub static LOADLIBNAME: &'static str = lib::raw::LUA_LOADLIBNAME;
+
+// Functions from lualib
+impl State {
+    /// Open the basic library.
+    pub fn open_base(&mut self) {
+        #[inline];
+        self.checkstack(2);
+        unsafe { self.open_base_unchecked() }
+    }
+
+    /// Unchecked variant of open_base().
+    /// Skips the call to checkstack().
+    pub unsafe fn open_base_unchecked(&mut self) {
+        #[inline];
+        self.pushcfunction(lib::raw::luaopen_base);
+        self.pushstring("");
+        self.call(1, 0);
+    }
+
+    /// Opens the table library.
+    pub fn open_table(&mut self) {
+        #[inline];
+        self.checkstack(2);
+        unsafe { self.open_table_unchecked() }
+    }
+
+    /// Unchecked variant of open_table().
+    /// Skips the call to checkstack().
+    pub unsafe fn open_table_unchecked(&mut self) {
+        #[inline];
+        self.pushcfunction(lib::raw::luaopen_table);
+        self.pushstring(TABLIBNAME);
+        self.call(1, 0);
+    }
+
+    /// Opens the io library.
+    pub fn open_io(&mut self) {
+        #[inline];
+        self.checkstack(2);
+        unsafe { self.open_io_unchecked() }
+    }
+
+    /// Unchecked variant of open_io().
+    /// Skips the call to checkstack().
+    pub unsafe fn open_io_unchecked(&mut self) {
+        #[inline];
+        self.pushcfunction(lib::raw::luaopen_io);
+        self.pushstring(IOLIBNAME);
+        self.call(1, 0);
+    }
+
+    /// Opens the os library.
+    pub fn open_os(&mut self) {
+        #[inline];
+        self.checkstack(2);
+        unsafe { self.open_os_unchecked() }
+    }
+
+    /// Unchecked variant of open_os().
+    /// Skips the call to checkstack().
+    pub unsafe fn open_os_unchecked(&mut self) {
+        #[inline];
+        self.pushcfunction(lib::raw::luaopen_os);
+        self.pushstring(OSLIBNAME);
+        self.call(1, 0);
+    }
+
+    /// Opens the string library.
+    pub fn open_string(&mut self) {
+        #[inline];
+        self.checkstack(2);
+        unsafe { self.open_string_unchecked() }
+    }
+
+    /// Unchecked variant of open_string().
+    /// Skips the call to checkstack().
+    pub unsafe fn open_string_unchecked(&mut self) {
+        #[inline];
+        self.pushcfunction(lib::raw::luaopen_string);
+        self.pushstring(STRLIBNAME);
+        self.call(1, 0);
+    }
+
+    /// Opens the math library.
+    pub fn open_math(&mut self) {
+        #[inline];
+        self.checkstack(2);
+        unsafe { self.open_math_unchecked() }
+    }
+
+    /// Unchecked variant of open_math().
+    /// Skips the call to checkstack().
+    pub unsafe fn open_math_unchecked(&mut self) {
+        #[inline];
+        self.pushcfunction(lib::raw::luaopen_math);
+        self.pushstring(MATHLIBNAME);
+        self.call(1, 0);
+    }
+
+    /// Opens the debug library.
+    pub fn open_debug(&mut self) {
+        #[inline];
+        self.checkstack(2);
+        unsafe { self.open_debug_unchecked() }
+    }
+
+    /// Unchecked variant of open_debug().
+    /// Skips the call to checkstack().
+    pub unsafe fn open_debug_unchecked(&mut self) {
+        #[inline];
+        self.pushcfunction(lib::raw::luaopen_debug);
+        self.pushstring(DBLIBNAME);
+        self.call(1, 0);
+    }
+
+    /// Opens the package library.
+    pub fn open_package(&mut self) {
+        #[inline];
+        self.checkstack(2);
+        unsafe { self.open_package_unchecked() }
+    }
+
+    /// Unchecked variant of open_package().
+    /// Skips the call to checkstack().
+    pub unsafe fn open_package_unchecked(&mut self) {
+        #[inline];
+        self.pushcfunction(lib::raw::luaopen_package);
+        self.pushstring(LOADLIBNAME);
+        self.call(1, 0);
+    }
+
+    /// Opens all standard Lua libraries.
+    pub fn openlibs(&mut self) {
+        #[inline];
+        self.checkstack(2);
+        unsafe { self.openlibs_unchecked() }
+    }
+
+    /// Unchecked variant of openlibs().
+    /// Skips the call to checkstack().
+    pub unsafe fn openlibs_unchecked(&mut self) {
+        #[inline];
+        lib::raw::luaL_openlibs(self.L)
+    }
 }
 
 // Functions from auxlib

@@ -1,4 +1,6 @@
 use State;
+use GLOBALSINDEX;
+use Type;
 
 #[test]
 fn test_state_init() {
@@ -53,4 +55,13 @@ fn test_describe() {
     extern "C" fn dummy(_L: *mut ::raw::lua_State) -> ::std::libc::c_int {
         0
     }
+}
+
+#[test]
+fn test_openlibs() {
+    let mut s = State::new();
+
+    s.openlibs();
+    s.getfield(GLOBALSINDEX, "table");
+    assert_eq!(s.type_(-1), Some(Type::Table));
 }
