@@ -162,7 +162,7 @@ impl State {
         }
         extern "C" fn panic(L: *mut raw::lua_State) -> c_int {
             unsafe {
-                let s = State::from_lua_State(L, false).describe(-1, false);
+                let s = State::from_lua_State(L, false).describe_unchecked_stack(-1, false);
                 fail!("unprotected error in call to Lua API ({})", s.unwrap_or_default());
             }
         }
@@ -173,6 +173,11 @@ impl State {
     pub unsafe fn from_lua_State(L: *mut raw::lua_State, owned: bool) -> State {
         #[inline];
         State{ L: L, owned: owned, stackspace: MINSTACK }
+    }
+
+    /// Provides unsafe access to the underlying *lua_State
+    pub unsafe fn get_lua_State(&mut self) -> *mut raw::lua_State {
+        self.L
     }
 
     /* Utility functions */
@@ -203,20 +208,23 @@ impl State {
     pub fn describe(&mut self, idx: i32) -> Option<~str> {
         #[inline];
         self.check_acceptable(idx);
+        assert!(self.checkstack(1), "stack overflow");
         unsafe { self.describe_unchecked(idx) }
     }
 
     /// Unchecked variant of describe()
+    /// May require 1 extra slot on the stack.
     pub unsafe fn describe_unchecked(&mut self, idx: i32) -> Option<~str> {
         #[inline];
-        self.describe_unchecked_nostack(idx, true)
+        self.describe_unchecked_stack(idx, true)
     }
 
     /// Variant of describe_unchecked() that does not push on to the stack.
     /// describe() and describe_unchecked() may push new values onto the stack temporarily.
     /// Notably, it may do this to avoid converting the existing value's type.
     /// This method allows this behavior to be disabled.
-    pub unsafe fn describe_unchecked_nostack(&mut self, idx: i32, usestack: bool) -> Option<~str> {
+    /// If usestack is on, this method may require 1 free slot on the stack.
+    pub unsafe fn describe_unchecked_stack(&mut self, idx: i32, usestack: bool) -> Option<~str> {
         match self.type_unchecked(idx) {
             None => None,
             Some(typ) => Some(match typ {
@@ -228,6 +236,10 @@ impl State {
                     let s = self.tostring_unchecked(-1);
                     if (usestack) { self.pop(1); } // remove the copied value
                     s.unwrap_or_default() // default will be ~""
+                }
+                Type::String => {
+                    let s = self.tostring_unchecked(-1);
+                    s.unwrap_or_default()
                 }
                 _ => {
                     // TODO: flesh this out
@@ -278,7 +290,24 @@ impl State {
     // remove
     // insert
     // replace
-    // checkstack
+
+    /// Ensures the stack contains at least `extra` free slots on the stack.
+    /// Returns false if it cannot grow the stack as requested.
+    pub fn checkstack(&mut self, extra: i32) -> bool {
+        #[inline];
+        let top = self.gettop();
+        if top + extra > self.stackspace {
+            if unsafe { raw::lua_checkstack(self.L, extra as c_int) } != 0 {
+                self.stackspace = top + extra;
+                true
+            } else {
+                false
+            }
+        } else {
+            true
+        }
+    }
+
     // xmove
 
     /* Access functions */
@@ -387,9 +416,21 @@ impl State {
     // pushnil
     // pushnumber
     // pushinteger
-    // pushlstring
-    // pushstring
-    // pushfstring
+
+    /// Pushes an integer onto the stack
+    pub fn pushinteger(&mut self, n: int) {
+        #[inline];
+        unsafe { raw::lua_pushinteger(self.L, n as raw::lua_Integer) }
+    }
+
+    /// Pushes a string onto the stack
+    pub fn pushstring(&mut self, s: &str) {
+        #[inline];
+        s.as_imm_buf(|buf, len| {
+            unsafe { raw::lua_pushlstring(self.L, buf as *libc::c_char, len as libc::size_t) }
+        })
+    }
+
     // pushcclosure
     // pushboolean
     // pushlightuserdata
@@ -435,9 +476,39 @@ impl State {
 
     /* Miscellaneous functions */
 
-    // error
+    /// Raises an error (using the value at the top of the stack)
+    pub fn error(&mut self) -> ! {
+        #[inline];
+        assert!(self.gettop() > 0, "Stack underflow");
+        unsafe { self.error_unchecked() }
+    }
+
+    /// Unchecked variant of error()
+    /// Skips the check to ensure the stack is not empty
+    pub unsafe fn error_unchecked(&mut self) -> ! {
+        #[inline];
+        raw::lua_error(self.L);
+        unreachable!()
+    }
+
     // next
-    // concat
+
+    /// Concatenates the `n` values at the top of the stack, pops them, and
+    /// leaves the result at the top.
+    /// Fails if n is negative or larger than the stack top.
+    pub fn concat(&mut self, n: i32) {
+        #[inline];
+        assert!(n >= 0, "Cannot concat negative elements");
+        assert!(n <= self.gettop(), "Stack underflow");
+        unsafe { self.concat_unchecked(n) }
+    }
+
+    /// Unchecked variant of concat()
+    pub unsafe fn concat_unchecked(&mut self, n: i32) {
+        #[inline];
+        raw::lua_concat(self.L, n as c_int)
+    }
+
     // getallocf
     // setallocf
 
@@ -457,6 +528,7 @@ impl State {
 
     /// Unchecked variant of pop()
     pub unsafe fn pop_unchecked(&mut self, n: i32) {
+        #[inline];
         raw::lua_pop(self.L, n as c_int)
     }
 
@@ -497,8 +569,26 @@ impl State {
     // checkany
     // newmetadata
     // checkudata
-    // where
-    // error (probably call errorfmt? and implement manually with fmt!)
+
+    /// Pushes onto the stack a string identifying the current position of the
+    /// control at level `lvl` in the call stack.
+    /// Level 0 is the running function, level 1 is the function that called
+    /// the running function, etc.
+    pub fn where(&mut self, lvl: i32) {
+        #[inline];
+        unsafe { aux::raw::luaL_where(self.L, lvl as c_int) }
+    }
+
+    /// Raises an error with the given string.
+    /// It also adds at the beginning of the message the file name and line
+    /// number where the error occurred, if this information is available.
+    pub fn errorstr(&mut self, s: &str) -> ! {
+        self.where(1);
+        self.pushstring(s);
+        unsafe { self.concat_unchecked(2); }
+        unsafe { raw::lua_error(self.L); }
+        unreachable!()
+    }
     // checkoption
     // ref
     // unref
