@@ -110,15 +110,20 @@ pub mod GC {
 ///
 /// Unless otherwise noted, all safe functions that take indexes will fail if the index is not
 /// acceptable. All unsafe functions named *_unchecked skip the index check.
+#[unsafe_no_drop_flag]
 pub struct State {
     priv L: *mut raw::lua_State,
+    priv owned: bool,
     priv stackspace: i32
 }
 
 impl Drop for State {
     fn drop(&mut self) {
-        unsafe {
-            raw::lua_close(self.L);
+        if self.owned {
+            self.owned = false;
+            unsafe {
+                raw::lua_close(self.L);
+            }
         }
     }
 }
@@ -138,7 +143,7 @@ impl State {
             let L = raw::lua_newstate(alloc, ptr::mut_null());
             if (L.is_not_null()) {
                 raw::lua_atpanic(L, panic);
-                Some(State::from_lua_State(L))
+                Some(State::from_lua_State(L, true))
             } else {
                 None
             }
@@ -157,16 +162,17 @@ impl State {
         }
         extern "C" fn panic(L: *mut raw::lua_State) -> c_int {
             unsafe {
-                let s = State::from_lua_State(L).describe(-1);
-                fail!("unprotected error in call to Lua API ({})", s);
+                let s = State::from_lua_State(L, false).describe(-1, false);
+                fail!("unprotected error in call to Lua API ({})", s.unwrap_or_default());
             }
         }
     }
 
-    /// Wraps a raw::lua_State in a State
-    pub unsafe fn from_lua_State(L: *mut raw::lua_State) -> State {
+    /// Wraps a *raw::lua_State in a State
+    /// If `owned` is true, the *lua_State will be closed when the State is dropped.
+    pub unsafe fn from_lua_State(L: *mut raw::lua_State, owned: bool) -> State {
         #[inline];
-        State{ L: L, stackspace: MINSTACK }
+        State{ L: L, owned: owned, stackspace: MINSTACK }
     }
 
     /* Utility functions */
