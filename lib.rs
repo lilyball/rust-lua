@@ -219,20 +219,21 @@ impl State {
             assert!(idx <= self.stackspace, "index {} is not acceptable (stack space is {})",
                     idx, self.stackspace);
         } else if idx < 0 {
-            self.check_valid(idx);
+            self.check_valid(idx, true);
         } else {
             fail!("index 0 is not acceptable");
         }
     }
 
-    fn check_valid(&mut self, idx: i32) {
+    fn check_valid(&mut self, idx: i32, allowpseudo: bool) {
         #[inline];
         match idx {
             0 => fail!("index 0 is not valid"),
-            GLOBALSINDEX => (),
-            REGISTRYINDEX => (),
-            ENVIRONINDEX => (),
+            GLOBALSINDEX |
+            REGISTRYINDEX |
+            ENVIRONINDEX => assert!(allowpseudo, "Pseudo-indices are not valid for this call"),
             _ if idx < GLOBALSINDEX => {
+                assert!(allowpseudo, "Pseudo-indices are not valid for this call");
                 // we can't actually test for upvalue validity
                 // at least not without using lua_Debug, which seems excessive.
                 // However, I think that invalid but acceptable upvalues are treated as nil
@@ -325,7 +326,7 @@ impl State {
     /// Fails if the index is not valid.
     pub fn pushvalue(&mut self, idx: i32) {
         #[inline];
-        self.check_valid(idx);
+        self.check_valid(idx, true);
         unsafe { self.pushvalue_unchecked(idx) }
     }
 
@@ -335,9 +336,47 @@ impl State {
         raw::lua_pushvalue(self.L, idx as c_int)
     }
 
-    // remove
-    // insert
-    // replace
+    /// Removes the element at the given valid index, shifting other elements as needed.
+    /// Pseudo-indices are not valid for this call.
+    pub fn remove(&mut self, idx: i32) {
+        #[inline];
+        self.check_valid(idx, false);
+        unsafe { self.remove_unchecked(idx) }
+    }
+
+    /// Unchecked variant of remove()
+    pub unsafe fn remove_unchecked(&mut self, idx: i32) {
+        #[inline];
+        raw::lua_remove(self.L, idx as c_int)
+    }
+
+    /// Moves the top element into the given valid index, shifting existing elements as needed.
+    /// Pseudo-indices are not valid for this call.
+    pub fn insert(&mut self, idx: i32) {
+        #[inline];
+        self.check_valid(idx, false);
+        unsafe { self.insert_unchecked(idx) }
+    }
+
+    /// Unchecked variant of insert()
+    pub unsafe fn insert_unchecked(&mut self, idx: i32) {
+        #[inline];
+        raw::lua_insert(self.L, idx as c_int)
+    }
+
+    /// Moves the top element into the given valid index and replaces the existing value, without
+    /// shifting any other elements.
+    pub fn replace(&mut self, idx: i32) {
+        #[inline];
+        self.check_valid(idx, true);
+        unsafe { self.replace_unchecked(idx) }
+    }
+
+    /// Unchecked variant of replace()
+    pub unsafe fn replace_unchecked(&mut self, idx: i32) {
+        #[inline];
+        raw::lua_replace(self.L, idx as c_int)
+    }
 
     /// Ensures the stack contains at least `extra` free slots on the stack.
     /// Returns false if it cannot grow the stack as requested.
@@ -356,7 +395,24 @@ impl State {
         }
     }
 
-    // xmove
+    /// Exchanges values between different threads of the same global state.
+    /// This method pops n values from the stack `self`, and pushes them to the stack `to`.
+    ///
+    /// Note: this method is unsafe because it cannot check to ensure that both threads belong
+    /// to the same global state.
+    ///
+    /// Despite being unsafe, it still checks the validity of `n`.
+    pub unsafe fn xmove(&mut self, to: &mut State, n: i32) {
+        #[inline];
+        assert!(self.gettop() >= n);
+        self.xmove_unchecked(to, n)
+    }
+
+    /// Unchecked variant of xmove()
+    pub unsafe fn xmove_unchecked(&mut self, to: &mut State, n: i32) {
+        #[inline];
+        raw::lua_xmove(self.L, to.L, n as c_int)
+    }
 
     /* Access functions */
 
@@ -583,7 +639,7 @@ impl State {
     /// valid index and k is the value at the top of the stack.
     pub fn gettable(&mut self, idx: i32) {
         #[inline];
-        self.check_valid(idx);
+        self.check_valid(idx, true);
         assert!(self.gettop() >= 1, "stack underflow");
         unsafe { self.gettable_unchecked(idx) }
     }
@@ -597,7 +653,7 @@ impl State {
     /// Pushes onto the stack the value t[k], where t is the value at the given valid index.
     pub fn getfield(&mut self, idx: i32, k: &str) {
         #[inline];
-        self.check_valid(idx);
+        self.check_valid(idx, true);
         unsafe { self.getfield_unchecked(idx, k) }
     }
 
