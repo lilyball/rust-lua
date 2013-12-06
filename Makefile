@@ -1,4 +1,4 @@
-.PHONY: test all
+.PHONY: test all clean
 
 all: $(filter-out tests.rs,$(wildcard *.rs))
 	rustc lib.rs
@@ -6,3 +6,6 @@ all: $(filter-out tests.rs,$(wildcard *.rs))
 test: $(wildcard *.rs)
 	rustc --test lib.rs
 	env RUST_THREADS=1 ./lua
+
+clean:
+	rm lua
