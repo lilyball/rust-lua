@@ -1079,14 +1079,88 @@ impl State {
     // callmeta
     // typerror
     // argerror
-    // checklstring
+
+    /// Checks whether the function argument `narg` is a string, and returns the string.
+    /// This function uses lua_tolstring to get its result, so all conversions and caveats of
+    /// that function apply here.
+    ///
+    /// If the string is not utf-8, returns None.
+    ///
+    /// Note: use .map(|s| s.to_owned()) if you need to use the state while the string is alive.
+    pub fn checkstring<'a>(&'a mut self, narg: i32) -> Option<&'a str> {
+        #[inline];
+        self.check_acceptable(narg);
+        unsafe { self.checkstring_unchecked(narg) }
+    }
+
+    /// Unchecked variant of checkstring()
+    pub unsafe fn checkstring_unchecked<'a>(&'a mut self, narg: i32) -> Option<&'a str> {
+        #[inline];
+        str::from_utf8_opt(self.checkbytes_unchecked(narg))
+    }
+
+    /// Checks whether the function argument `narg` is a lua string, and returns it as a
+    /// byte vector. See checkstring() for caveats.
+    pub fn checkbytes<'a>(&'a mut self, narg: i32) -> &'a [u8] {
+        #[inline];
+        self.check_acceptable(narg);
+        unsafe { self.checkbytes_unchecked(narg) }
+    }
+
+    /// Unchecked variant of checkbytes()
+    pub unsafe fn checkbytes_unchecked<'a>(&'a mut self, narg: i32) -> &'a [u8] {
+        let mut sz: libc::size_t = 0;
+        let s = aux::raw::luaL_checklstring(self.L, narg, &mut sz);
+        vec::raw::buf_as_slice(s as *u8, sz as uint, |b| {
+            std::cast::transmute::<&[u8], &'a [u8]>(b)
+        })
+    }
+
     // optlstring
-    // checknumber
+
+    /// Checks whether the function argument `narg` is a number and returns the number.
+    pub fn checknumber(&mut self, narg: i32) -> f64 {
+        #[inline];
+        self.check_acceptable(narg);
+        unsafe { self.checknumber_unchecked(narg) }
+    }
+
+    /// Unchecked variant of checknumber()
+    pub unsafe fn checknumber_unchecked(&mut self, narg: i32) -> f64 {
+        #[inline];
+        aux::raw::luaL_checknumber(self.L, narg as c_int) as f64
+    }
+
     // optnumber
-    // checkinteger
+
+    /// Checks whether the function argument `narg` is a number and returns it as an int.
+    pub fn checkint(&mut self, narg: i32) -> int {
+        #[inline];
+        self.check_acceptable(narg);
+        unsafe { self.checkint_unchecked(narg) }
+    }
+
+    /// Unchecked variant of checkint()
+    pub unsafe fn checkint_unchecked(&mut self, narg: i32) -> int {
+        #[inline];
+        aux::raw::luaL_checkinteger(self.L, narg as c_int) as int
+    }
+
     // optinteger
     // checktype
-    // checkany
+    /// Checks whether the function has an argument of any type (including nil) at position `narg`.
+    pub fn checkany(&mut self, narg: i32) {
+        #[inline];
+        self.check_acceptable(narg);
+        unsafe { self.checkany_unchecked(narg) }
+    }
+
+    /// Unchecked variant of checkany()
+    pub unsafe fn checkany_unchecked(&mut self, narg: i32) {
+        #[inline];
+        aux::raw::luaL_checkany(self.L, narg as c_int)
+    }
+
     // newmetadata
     // checkudata
 
@@ -1123,7 +1197,41 @@ impl State {
         raw::lua_error(self.L);
         unreachable!()
     }
-    // checkoption
+
+    /// Checks whether the function arg `narg` is a string and searches for this string in `lst`.
+    /// The first element of each tuple is compared against, and if a match is found, the second
+    /// element is returned.
+    /// Raises an error if the argument is not a string or the string cannot be found.
+    ///
+    /// If `def` is not None, the function uses `def` as a default value when there is no argument
+    /// `narg` or this argument is nil.
+    ///
+    /// Raises the `c_str::null_byte` condition if `def` or any list key has interior NULs
+    pub fn checkoption<'a, T>(&mut self, narg: i32, def: Option<&str>, lst: &'a [(&str,T)])
+                             -> &'a T {
+        #[inline];
+        self.check_acceptable(narg);
+        unsafe { self.checkoption_unchecked(narg, def, lst) }
+    }
+
+    /// Unchecked variant of checkoption()
+    pub unsafe fn checkoption_unchecked<'a, T>(&mut self, narg: i32, def: Option<&str>,
+                                               lst: &'a [(&str,T)]) -> &'a T {
+        let def_cstr = def.map(|d| d.to_c_str());
+        let defp = def_cstr.as_ref().map_default(ptr::null(), |c| c.with_ref(|p| p));
+        let mut lst_cstrs = vec::with_capacity(lst.len());
+        let mut lstv = vec::with_capacity(lst.len()+1);
+        for &(k,_) in lst.iter() {
+            let cstr = k.to_c_str();
+            let p = cstr.with_ref(|p| p);
+            lst_cstrs.push(cstr);
+            lstv.push(p);
+        }
+        lstv.push(ptr::null());
+        let i = lstv.as_imm_buf(|b,_| aux::raw::luaL_checkoption(self.L, narg as c_int, defp, b));
+        lst[i].second_ref()
+    }
+
     // ref
     // unref
 
@@ -1198,10 +1306,6 @@ impl State {
     // argcheck
     // checkstring
     // optstring
-    // checkint
-    // optint
-    // checklong
-    // optlong
     // typename
     // dofile
     // dostring

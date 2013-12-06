@@ -2,6 +2,8 @@ use State;
 use GLOBALSINDEX;
 use Type;
 
+use std::task;
+
 #[test]
 fn test_state_init() {
     let mut _s = State::new();
@@ -17,7 +19,7 @@ fn test_error() {
 
 #[test]
 fn test_errorstr() {
-    let res = do ::std::task::try::<()> {
+    let res = do task::try::<()> {
         let mut s = State::new();
         s.errorstr("some err");
     };
@@ -64,4 +66,37 @@ fn test_openlibs() {
     s.openlibs();
     s.getfield(GLOBALSINDEX, "table");
     assert_eq!(s.type_(-1), Some(Type::Table));
+}
+
+#[deriving(Eq)]
+enum CheckOptionEnum {
+    COEOne,
+    COETwo,
+    COEThree
+}
+
+#[test]
+fn test_checkoption() {
+    let lst = [("one", COEOne), ("two", COETwo), ("three", COEThree)];
+
+    let mut s = State::new();
+
+    for &(k,ref v) in lst.iter() {
+        s.pushstring(k);
+        assert_eq!(*s.checkoption(1, None, lst), *v);
+        s.pop(1);
+    }
+    assert_eq!(*s.checkoption(1, Some("three"), lst), COEThree);
+
+    let res = do task::try {
+        let mut s = State::new();
+        s.checkoption(1, None, lst);
+    };
+    assert!(res.is_err(), "expected error from checkoption");
+
+    let res = do task::try {
+        let mut s = State::new();
+        s.checkoption(1, Some("four"), lst);
+    };
+    assert!(res.is_err(), "expected error from checkoption");
 }
