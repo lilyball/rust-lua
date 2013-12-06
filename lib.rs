@@ -308,13 +308,12 @@ impl State {
                 Type::Number => {
                     // Let Lua create the string instead of us
                     if (usestack) { self.pushvalue_unchecked(idx); } // copy the value
-                    let s = self.tostring_unchecked(-1);
+                    let s = self.tostring_unchecked(-1).map(|s| s.to_owned());
                     if (usestack) { self.pop(1); } // remove the copied value
                     s.unwrap_or_default() // default will be ~""
                 }
                 Type::String => {
-                    let s = self.tostring_unchecked(idx);
-                    s.unwrap_or_default()
+                    self.tostring_unchecked(idx).unwrap_or("<invalid utf8>").to_owned()
                 }
                 Type::LightUserdata |
                 Type::Userdata |
@@ -523,39 +522,47 @@ impl State {
     }
 
     /// Converts the value at the given acceptable index to a string.
+    ///
     /// Returns None if the value is not a number or a string.
     /// Returns None if the string value is not utf-8.
+    ///
     /// Note: if the value is a number, this method changes the value in the stack to a string.
     /// This may confuse lua_next if this is called during table traversal.
-    pub fn tostring(&mut self, idx: i32) -> Option<~str> {
+    ///
+    /// Note: This method borrows the state. Call .map(|s| s.to_owned()) on the result if you need
+    /// to continue using the state while the string is alive.
+    pub fn tostring<'a>(&'a mut self, idx: i32) -> Option<&'a str> {
         #[inline];
         self.check_acceptable(idx);
         unsafe { self.tostring_unchecked(idx) }
     }
 
     /// Unchecked variant of tostring()
-    pub unsafe fn tostring_unchecked(&mut self, idx: i32) -> Option<~str> {
+    pub unsafe fn tostring_unchecked<'a>(&'a mut self, idx: i32) -> Option<&'a str> {
         #[inline];
-        self.tostring_slice_unchecked(idx).map(|s| s.to_owned())
+        self.tobytes_unchecked(idx).and_then(|v| str::from_utf8_opt(v))
     }
 
-    /// Converts the value at the given acceptable index into a string slice.
-    /// See tostring() for details.
-    pub fn tostring_slice<'a>(&'a mut self, idx: i32) -> Option<&'a str> {
+    /// Converts the value at the given acceptable index into a lua string, and returns it
+    /// as a byte vector.
+    /// Returns None if the value is not a number or a string.
+    /// See tostring() for caveats.
+    pub fn tobytes<'a>(&'a mut self, idx: i32) -> Option<&'a [u8]> {
         #[inline];
         self.check_acceptable(idx);
-        unsafe { self.tostring_slice_unchecked(idx) }
+        unsafe { self.tobytes_unchecked(idx) }
     }
 
-    /// Unchecked variant of tostring_slice()
-    pub unsafe fn tostring_slice_unchecked<'a>(&'a mut self, idx: i32) -> Option<&'a str> {
+    /// Unchecked variant of tobytes()
+    pub unsafe fn tobytes_unchecked<'a>(&'a mut self, idx: i32) -> Option<&'a [u8]> {
+        #[inline];
         let mut sz: libc::size_t = 0;
         let s = raw::lua_tolstring(self.L, idx, &mut sz);
         if s.is_null() {
             None
         } else {
             vec::raw::buf_as_slice(s as *u8, sz as uint, |b| {
-                str::from_utf8_opt(b).map(|s| std::cast::transmute::<&str, &'a str>(s))
+                Some(std::cast::transmute::<&[u8], &'a [u8]>(b))
             })
         }
     }
@@ -635,6 +642,21 @@ impl State {
     pub unsafe fn pushstring_unchecked(&mut self, s: &str) {
         #[inline];
         s.as_imm_buf(|buf, len| {
+            raw::lua_pushlstring(self.L, buf as *libc::c_char, len as libc::size_t)
+        })
+    }
+
+    /// Pushes a byte vector onto the stack as a lua string
+    pub fn pushbytes(&mut self, bytes: &[u8]) {
+        #[inline];
+        self.checkstack_(1);
+        unsafe { self.pushbytes_unchecked(bytes) }
+    }
+
+    /// Unchecked variant of pushbytes()
+    pub unsafe fn pushbytes_unchecked(&mut self, bytes: &[u8]) {
+        #[inline];
+        bytes.as_imm_buf(|buf, len| {
             raw::lua_pushlstring(self.L, buf as *libc::c_char, len as libc::size_t)
         })
     }
