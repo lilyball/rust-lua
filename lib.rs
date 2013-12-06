@@ -12,7 +12,7 @@
 
 use std::libc;
 use std::libc::c_int;
-use std::{ptr, str, vec};
+use std::{path, ptr, str, vec};
 
 #[link(name = "lua.5.1")]
 extern {}
@@ -130,6 +130,37 @@ pub mod GC {
 
 /// Type that represents C functions that can be registered with Lua.
 pub type CFunction = raw::lua_CFunction;
+
+/// State.load() errors
+pub type LoadError = LoadError::LoadError;
+pub mod LoadError {
+    //! State.load() error mod
+    use raw;
+    /// State.load() errors
+    pub enum LoadError {
+        /// Syntax error during pre-compilation
+        ErrSyntax = raw::LUA_ERRSYNTAX,
+        /// Memory allocation error
+        ErrMem = raw::LUA_ERRMEM
+    }
+}
+
+/// State.loadfile() errors
+pub type LoadFileError = LoadFileError::LoadFileError;
+pub mod LoadFileError {
+    //! State.loadfile() error mod
+    use aux;
+    use raw;
+    /// State.loadfile() errors
+    pub enum LoadFileError {
+        /// Syntax error during pre-compilation
+        ErrSyntax = raw::LUA_ERRSYNTAX,
+        /// Memory allocation error
+        ErrMem = raw::LUA_ERRMEM,
+        /// Cannot read/open the file
+        ErrFile = aux::raw::LUA_ERRFILE
+    }
+}
 
 /// The Lua state.
 /// Every Lua thread is represented by a separate State.
@@ -651,6 +682,7 @@ impl State {
     }
 
     /// Pushes onto the stack the value t[k], where t is the value at the given valid index.
+    /// Raises the c_str::null_byte condition if `k` has any interior NULs.
     pub fn getfield(&mut self, idx: i32, k: &str) {
         #[inline];
         self.check_valid(idx, true);
@@ -658,6 +690,7 @@ impl State {
     }
 
     /// Unchecked variant of getfield().
+    /// Raises the c_str::null_byte condition if `k` has any interior NULs.
     pub unsafe fn getfield_unchecked(&mut self, idx: i32, k: &str) {
         #[inline];
         k.with_c_str(|s| raw::lua_getfield(self.L, idx as c_int, s))
@@ -1001,9 +1034,54 @@ impl State {
     // checkoption
     // ref
     // unref
-    // loadfile
-    // loadbuffer
-    // loadstring
+
+    /// Loads a file as a Lua chunk (but does not run it).
+    /// If the `filename` is None, this loads from standard input.
+    /// Raises the c_str::null_byte condition if `filename` has any interior NULs.
+    pub fn loadfile(&mut self, filename: Option<&path::Path>) -> Option<LoadFileError> {
+        let cstr = filename.map(|p| p.to_c_str());
+        let ptr = cstr.map_default(ptr::null(), |cstr| cstr.with_ref(|p| p));
+        self.checkstack(1);
+        match unsafe { aux::raw::luaL_loadfile(self.L, ptr) } {
+            0 => None,
+            raw::LUA_ERRSYNTAX => Some(LoadFileError::ErrSyntax),
+            raw::LUA_ERRMEM => Some(LoadFileError::ErrMem),
+            aux::raw::LUA_ERRFILE => Some(LoadFileError::ErrFile),
+            _ => fail!("unexpected error from luaL_loadfile")
+        }
+    }
+    /// Loads a buffer as a Lua chunk (but does not run it).
+    /// As far as Rust is concerned, this differ from loadstring() in that a name for the chunk
+    /// is provided. It also allows for NUL bytes, but I expect Lua won't like those.
+    /// Raises the c_str::null_byte condition if `name` has any interior NULs.
+    pub fn loadbuffer(&mut self, buff: &str, name: &str) -> Option<LoadError> {
+        self.checkstack(1);
+        buff.as_imm_buf(|bp, bsz| {
+            let bp = bp as *libc::c_char;
+            let bsz = bsz as libc::size_t;
+            let err = name.with_c_str(|name| unsafe {
+                aux::raw::luaL_loadbuffer(self.L, bp, bsz, name)
+            });
+            match err {
+                0 => None,
+                raw::LUA_ERRSYNTAX => Some(LoadError::ErrSyntax),
+                raw::LUA_ERRMEM => Some(LoadError::ErrMem),
+                _ => fail!("unexpected error from luaL_loadbuffer")
+            }
+        })
+    }
+
+    /// Loads a string as a Lua chunk (but does not run it).
+    /// Raises the c_str::null_byte condition if `s` has any interior NULs.
+    pub fn loadstring(&mut self, s: &str) -> Option<LoadError> {
+        self.checkstack(1);
+        match s.with_c_str(|s| unsafe { aux::raw::luaL_loadstring(self.L, s) }) {
+            0 => None,
+            raw::LUA_ERRSYNTAX => Some(LoadError::ErrSyntax),
+            raw::LUA_ERRMEM => Some(LoadError::ErrMem),
+            _ => fail!("unexpected error from luaL_loadstring")
+        }
+    }
     // gsub
 
     /* Some useful functions (macros in C) */
