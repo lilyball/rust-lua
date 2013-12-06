@@ -1140,7 +1140,7 @@ impl State {
     pub unsafe fn loadfile_unchecked(&mut self, filename: Option<&path::Path>)
                                     -> Option<LoadFileError> {
         let cstr = filename.map(|p| p.to_c_str());
-        let ptr = cstr.map_default(ptr::null(), |cstr| cstr.with_ref(|p| p));
+        let ptr = cstr.as_ref().map_default(ptr::null(), |cstr| cstr.with_ref(|p| p));
         match aux::raw::luaL_loadfile(self.L, ptr) {
             0 => None,
             raw::LUA_ERRSYNTAX => Some(LoadFileError::ErrSyntax),
