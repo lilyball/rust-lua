@@ -817,6 +817,19 @@ impl State {
 
     // newtable
     // register
+    /// Sets the C function `f` as the new value of global `name`.
+    /// Raises the `c_str::null_byte` condition if `name` has interior NULs
+    pub fn register(&mut self, name: &str, f: CFunction) {
+        #[inline];
+        self.checkstack_(1);
+        unsafe { self.register_unchecked(name, f) }
+    }
+
+    /// Unchecked variant of register()
+    pub unsafe fn register_unchecked(&mut self, name: &str, f: CFunction) {
+        #[inline];
+        name.with_c_str(|s| raw::lua_register(self.L, s, f) )
+    }
 
     /// Pushes a C function onto the stack.
     pub fn pushcfunction(&mut self, f: CFunction) {
@@ -840,8 +853,35 @@ impl State {
     // isthread
     // isnone
     // isnoneornil
-    // setglobal
-    // getglobal
+
+    /// Pops a value from the stack and sets it as the new value of global `name`.
+    /// Raises the `c_str::null_byte` condition if `name` has interior NULs.
+    pub fn setglobal(&mut self, name: &str) {
+        #[inline];
+        assert!(self.gettop() > 0, "stack underflow");
+        unsafe { self.setglobal_unchecked(name) }
+    }
+
+    /// Unchecked variant of setglobal().
+    /// Raises the `c_str::null_byte` condition if `name` has interior NULs.
+    pub unsafe fn setglobal_unchecked(&mut self, name: &str) {
+        name.with_c_str(|s| raw::lua_setglobal(self.L, s))
+    }
+
+    /// Pushes onto the stack the value of the global `name`.
+    /// Raises the `c_str::null_byte` condition if `name` has interior NULs.
+    pub fn getglobal(&mut self, name: &str) {
+        #[inline];
+        self.checkstack_(1);
+        unsafe { self.getglobal_unchecked(name) }
+    }
+
+    /// Unchecked variant of getglobal().
+    /// Raises the `c_str::null_byte` condition if `name` has interior NULs.
+    pub unsafe fn getglobal_unchecked(&mut self, name: &str) {
+        #[inline];
+        name.with_c_str(|s| raw::lua_getglobal(self.L, s))
+    }
 
     /* Hack */
 
