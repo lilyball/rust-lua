@@ -283,7 +283,7 @@ impl State {
     pub fn describe(&mut self, idx: i32) -> Option<~str> {
         #[inline];
         self.check_acceptable(idx);
-        assert!(self.checkstack(1), "stack overflow");
+        self.checkstack_(1);
         unsafe { self.describe_unchecked(idx) }
     }
 
@@ -358,6 +358,7 @@ impl State {
     pub fn pushvalue(&mut self, idx: i32) {
         #[inline];
         self.check_valid(idx, true);
+        self.checkstack_(1);
         unsafe { self.pushvalue_unchecked(idx) }
     }
 
@@ -426,6 +427,12 @@ impl State {
         }
     }
 
+    /// Ensures the stack contains at least `extra` free slots on the stack.
+    /// Fails if it cannot grow the stack.
+    pub fn checkstack_(&mut self, extra: i32) {
+        assert!(self.checkstack(extra), "cannot grow stack");
+    }
+
     /// Exchanges values between different threads of the same global state.
     /// This method pops n values from the stack `self`, and pushes them to the stack `to`.
     ///
@@ -436,6 +443,7 @@ impl State {
     pub unsafe fn xmove(&mut self, to: &mut State, n: i32) {
         #[inline];
         assert!(self.gettop() >= n);
+        to.checkstack_(1);
         self.xmove_unchecked(to, n)
     }
 
@@ -576,7 +584,7 @@ impl State {
     /// Pushes a nil value onto the stack.
     pub fn pushnil(&mut self) {
         #[inline];
-        self.checkstack(1);
+        self.checkstack_(1);
         unsafe { self.pushnil_unchecked() }
     }
 
@@ -590,7 +598,7 @@ impl State {
     /// Pushes a number with value `n` onto the stack
     pub fn pushnumber(&mut self, n: f64) {
         #[inline];
-        self.checkstack(1);
+        self.checkstack_(1);
         unsafe { self.pushnumber_unchecked(n) }
     }
 
@@ -604,7 +612,7 @@ impl State {
     /// Pushes a number with value `n` onto the stack.
     pub fn pushinteger(&mut self, n: int) {
         #[inline];
-        self.checkstack(1);
+        self.checkstack_(1);
         unsafe { self.pushinteger_unchecked(n) }
     }
 
@@ -618,7 +626,7 @@ impl State {
     /// Pushes a string onto the stack
     pub fn pushstring(&mut self, s: &str) {
         #[inline];
-        self.checkstack(1);
+        self.checkstack_(1);
         unsafe { self.pushstring_unchecked(s) }
     }
 
@@ -635,7 +643,7 @@ impl State {
     pub fn pushcclosure(&mut self, f: CFunction, n: i32) {
         #[inline];
         if n == 0 {
-            self.checkstack(1);
+            self.checkstack_(1);
         }
         unsafe { self.pushcclosure_unchecked(f, n) }
     }
@@ -650,7 +658,7 @@ impl State {
     /// Pushes a boolean value onto the stack.
     pub fn pushboolean(&mut self, b: bool) {
         #[inline];
-        self.checkstack(1);
+        self.checkstack_(1);
         unsafe { self.pushboolean_unchecked(b) }
     }
 
@@ -668,10 +676,11 @@ impl State {
 
     /// Pushes onto the stack the value t[k], where t is the value at the given
     /// valid index and k is the value at the top of the stack.
+    /// The key is popped from the stack.
     pub fn gettable(&mut self, idx: i32) {
         #[inline];
         self.check_valid(idx, true);
-        assert!(self.gettop() >= 1, "stack underflow");
+        assert!(self.gettop() > 0, "stack underflow");
         unsafe { self.gettable_unchecked(idx) }
     }
 
@@ -686,6 +695,7 @@ impl State {
     pub fn getfield(&mut self, idx: i32, k: &str) {
         #[inline];
         self.check_valid(idx, true);
+        self.checkstack_(1);
         unsafe { self.getfield_unchecked(idx, k) }
     }
 
@@ -714,9 +724,16 @@ impl State {
     /* `load` and `call` functions (load and run Lua code) */
 
     /// Calls a function.
+    /// The function must be pushed first, followed by its arguments. `nargs` is the number of
+    /// arguments. The function and its arguments are popped automatically.
+    /// The function results are adjusted to `nresults`, unless `nresults` is `MULTRET`, in which
+    /// case all function results are pushed.
     pub fn call(&mut self, nargs: i32, nresults: i32) {
         #[inline];
-        assert!(self.gettop() >= nargs, "stack underflow");
+        assert!(nargs >= 0, "invalid nargs");
+        assert!(nresults == MULTRET || nresults >= 0, "invalid nresults");
+        assert!(self.gettop() > nargs, "stack underflow");
+        if nresults > nargs + 1 { self.checkstack_(nargs - nresults - 1) }
         unsafe { self.call_unchecked(nargs, nresults) }
     }
 
@@ -750,7 +767,6 @@ impl State {
     }
 
     /// Unchecked variant of error()
-    /// Skips the check to ensure the stack is not empty
     pub unsafe fn error_unchecked(&mut self) -> ! {
         #[inline];
         raw::lua_error(self.L);
@@ -766,6 +782,7 @@ impl State {
         #[inline];
         assert!(n >= 0, "Cannot concat negative elements");
         assert!(n <= self.gettop(), "Stack underflow");
+        if n == 0 { self.checkstack_(1) }
         unsafe { self.concat_unchecked(n) }
     }
 
@@ -804,12 +821,11 @@ impl State {
     /// Pushes a C function onto the stack.
     pub fn pushcfunction(&mut self, f: CFunction) {
         #[inline];
-        self.checkstack(1);
+        self.checkstack_(1);
         unsafe { self.pushcfunction_unchecked(f) }
     }
 
     /// Unchecked variant of pushcfunction().
-    /// Skips the call to checkstack().
     pub unsafe fn pushcfunction_unchecked(&mut self, f: CFunction) {
         #[inline];
         raw::lua_pushcfunction(self.L, f)
@@ -854,7 +870,7 @@ impl State {
     /// Open the basic library.
     pub fn open_base(&mut self) {
         #[inline];
-        self.checkstack(2);
+        self.checkstack_(2);
         unsafe { self.open_base_unchecked() }
     }
 
@@ -870,7 +886,7 @@ impl State {
     /// Opens the table library.
     pub fn open_table(&mut self) {
         #[inline];
-        self.checkstack(2);
+        self.checkstack_(2);
         unsafe { self.open_table_unchecked() }
     }
 
@@ -886,7 +902,7 @@ impl State {
     /// Opens the io library.
     pub fn open_io(&mut self) {
         #[inline];
-        self.checkstack(2);
+        self.checkstack_(2);
         unsafe { self.open_io_unchecked() }
     }
 
@@ -902,7 +918,7 @@ impl State {
     /// Opens the os library.
     pub fn open_os(&mut self) {
         #[inline];
-        self.checkstack(2);
+        self.checkstack_(2);
         unsafe { self.open_os_unchecked() }
     }
 
@@ -918,7 +934,7 @@ impl State {
     /// Opens the string library.
     pub fn open_string(&mut self) {
         #[inline];
-        self.checkstack(2);
+        self.checkstack_(2);
         unsafe { self.open_string_unchecked() }
     }
 
@@ -934,7 +950,7 @@ impl State {
     /// Opens the math library.
     pub fn open_math(&mut self) {
         #[inline];
-        self.checkstack(2);
+        self.checkstack_(2);
         unsafe { self.open_math_unchecked() }
     }
 
@@ -950,7 +966,7 @@ impl State {
     /// Opens the debug library.
     pub fn open_debug(&mut self) {
         #[inline];
-        self.checkstack(2);
+        self.checkstack_(2);
         unsafe { self.open_debug_unchecked() }
     }
 
@@ -966,7 +982,7 @@ impl State {
     /// Opens the package library.
     pub fn open_package(&mut self) {
         #[inline];
-        self.checkstack(2);
+        self.checkstack_(2);
         unsafe { self.open_package_unchecked() }
     }
 
@@ -982,7 +998,7 @@ impl State {
     /// Opens all standard Lua libraries.
     pub fn openlibs(&mut self) {
         #[inline];
-        self.checkstack(2);
+        self.checkstack_(2);
         unsafe { self.openlibs_unchecked() }
     }
 
@@ -1018,17 +1034,31 @@ impl State {
     /// the running function, etc.
     pub fn where(&mut self, lvl: i32) {
         #[inline];
-        unsafe { aux::raw::luaL_where(self.L, lvl as c_int) }
+        self.checkstack_(1);
+        unsafe { self.where_unchecked(lvl) }
+    }
+
+    /// Unchecked variant of where()
+    pub unsafe fn where_unchecked(&mut self, lvl: i32) {
+        #[inline];
+        aux::raw::luaL_where(self.L, lvl as c_int)
     }
 
     /// Raises an error with the given string.
     /// It also adds at the beginning of the message the file name and line
     /// number where the error occurred, if this information is available.
     pub fn errorstr(&mut self, s: &str) -> ! {
-        self.where(1);
+        #[inline];
+        self.checkstack_(2);
+        unsafe { self.errorstr_unchecked(s) }
+    }
+
+    /// Unchecked variant of errorstr()
+    pub unsafe fn errorstr_unchecked(&mut self, s: &str) -> ! {
+        self.where_unchecked(1);
         self.pushstring(s);
-        unsafe { self.concat_unchecked(2); }
-        unsafe { raw::lua_error(self.L); }
+        self.concat_unchecked(2);
+        raw::lua_error(self.L);
         unreachable!()
     }
     // checkoption
@@ -1039,10 +1069,17 @@ impl State {
     /// If the `filename` is None, this loads from standard input.
     /// Raises the c_str::null_byte condition if `filename` has any interior NULs.
     pub fn loadfile(&mut self, filename: Option<&path::Path>) -> Option<LoadFileError> {
+        #[inline];
+        self.checkstack_(1);
+        unsafe { self.loadfile_unchecked(filename) }
+    }
+
+    /// Unchecked variant of loadfile()
+    pub unsafe fn loadfile_unchecked(&mut self, filename: Option<&path::Path>)
+                                    -> Option<LoadFileError> {
         let cstr = filename.map(|p| p.to_c_str());
         let ptr = cstr.map_default(ptr::null(), |cstr| cstr.with_ref(|p| p));
-        self.checkstack(1);
-        match unsafe { aux::raw::luaL_loadfile(self.L, ptr) } {
+        match aux::raw::luaL_loadfile(self.L, ptr) {
             0 => None,
             raw::LUA_ERRSYNTAX => Some(LoadFileError::ErrSyntax),
             raw::LUA_ERRMEM => Some(LoadFileError::ErrMem),
@@ -1050,19 +1087,23 @@ impl State {
             _ => fail!("unexpected error from luaL_loadfile")
         }
     }
+
     /// Loads a buffer as a Lua chunk (but does not run it).
     /// As far as Rust is concerned, this differ from loadstring() in that a name for the chunk
     /// is provided. It also allows for NUL bytes, but I expect Lua won't like those.
     /// Raises the c_str::null_byte condition if `name` has any interior NULs.
     pub fn loadbuffer(&mut self, buff: &str, name: &str) -> Option<LoadError> {
-        self.checkstack(1);
+        #[inline];
+        self.checkstack_(1);
+        unsafe { self.loadbuffer_unchecked(buff, name) }
+    }
+
+    /// Unchecked variant of loadbuffer()
+    pub unsafe fn loadbuffer_unchecked(&mut self, buff: &str, name: &str) -> Option<LoadError> {
         buff.as_imm_buf(|bp, bsz| {
             let bp = bp as *libc::c_char;
             let bsz = bsz as libc::size_t;
-            let err = name.with_c_str(|name| unsafe {
-                aux::raw::luaL_loadbuffer(self.L, bp, bsz, name)
-            });
-            match err {
+            match name.with_c_str(|name| aux::raw::luaL_loadbuffer(self.L, bp, bsz, name)) {
                 0 => None,
                 raw::LUA_ERRSYNTAX => Some(LoadError::ErrSyntax),
                 raw::LUA_ERRMEM => Some(LoadError::ErrMem),
@@ -1074,8 +1115,14 @@ impl State {
     /// Loads a string as a Lua chunk (but does not run it).
     /// Raises the c_str::null_byte condition if `s` has any interior NULs.
     pub fn loadstring(&mut self, s: &str) -> Option<LoadError> {
-        self.checkstack(1);
-        match s.with_c_str(|s| unsafe { aux::raw::luaL_loadstring(self.L, s) }) {
+        #[inline];
+        self.checkstack_(1);
+        unsafe { self.loadstring_unchecked(s) }
+    }
+
+    /// Unchecked variant of loadstring()
+    pub unsafe fn loadstring_unchecked(&mut self, s: &str) -> Option<LoadError> {
+        match s.with_c_str(|s| aux::raw::luaL_loadstring(self.L, s)) {
             0 => None,
             raw::LUA_ERRSYNTAX => Some(LoadError::ErrSyntax),
             raw::LUA_ERRMEM => Some(LoadError::ErrMem),
