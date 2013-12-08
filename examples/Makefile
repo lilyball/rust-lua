@@ -1,6 +1,6 @@
 .PHONY: all clean
 
-EXAMPLES := simple sine
+EXAMPLES := simple sine simpleapi
 
 USES_COMMON := sine
 
