@@ -178,6 +178,22 @@ pub mod LoadFileError {
     }
 }
 
+/// State.pcall() errors
+pub type PCallError = PCallError::PCallError;
+pub mod PCallError {
+    //! State.pcall() error mod
+    use raw;
+    /// State.pcall() errors
+    pub enum PCallError {
+        /// Runtime error
+        ErrRun = raw::LUA_ERRRUN,
+        /// Memory allocation error
+        ErrMem = raw::LUA_ERRMEM,
+        /// Error while running the error handler function
+        ErrErr = raw::LUA_ERRERR
+    }
+}
+
 /// The Lua state.
 /// Every Lua thread is represented by a separate State.
 ///
@@ -263,8 +279,8 @@ impl State {
     fn check_acceptable(&mut self, idx: i32) {
         #[inline];
         if idx > 0 {
-            luaassert!(self, idx <= self.stackspace, "index {} is not acceptable (stack space is {})",
-                    idx, self.stackspace);
+            luaassert!(self, idx <= self.stackspace,
+                       "index {} is not acceptable (stack space is {})", idx, self.stackspace);
         } else if idx < 0 {
             self.check_valid(idx, true);
         } else {
@@ -278,7 +294,8 @@ impl State {
             0 => self.errorstr("index 0 is not valid"),
             GLOBALSINDEX |
             REGISTRYINDEX |
-            ENVIRONINDEX => luaassert!(self, allowpseudo, "Pseudo-indices are not valid for this call"),
+            ENVIRONINDEX => luaassert!(self, allowpseudo,
+                                       "Pseudo-indices are not valid for this call"),
             _ if idx < GLOBALSINDEX => {
                 luaassert!(self, allowpseudo, "Pseudo-indices are not valid for this call");
                 // we can't actually test for upvalue validity
@@ -289,7 +306,8 @@ impl State {
             }
             _ => {
                 let top = self.gettop();
-                luaassert!(self, idx.abs() <= top, "index {} is not valid (stack top is {})", idx, top);
+                luaassert!(self, idx.abs() <= top, "index {} is not valid (stack top is {})", idx,
+                           top);
             }
         }
     }
@@ -780,8 +798,43 @@ impl State {
         #[inline];
         raw::lua_call(self.L, nargs as c_int, nresults as c_int)
     }
-    // pcall
-    // cpcall
+
+    /// Calls a function in protected mode.
+    ///
+    /// If no error occurs, this behaves identically to call() and returns Ok(()).
+    /// If there is any error, the error message is pushed onto the stack, and an error code
+    /// is returned. The function and its arguments are always removed from the stack.
+    ///
+    /// If `errfunc` is 0, then the error message returned on the stack is exactly the original
+    /// error message. Otherwise, `errfunc` is the stack index of an error handler function.
+    /// It must not be a pseudo-index.
+    pub fn pcall(&mut self, nargs: i32, nresults: i32, errfunc: i32) -> Result<(),PCallError> {
+        #[inline];
+        luaassert!(self, nargs >= 0, "invalid nargs");
+        luaassert!(self, nresults == MULTRET || nresults >= 0, "invalid nresults");
+        luaassert!(self, self.gettop() > nargs, "stack underflow");
+        if errfunc != 0 {
+            self.check_valid(errfunc, false)
+        }
+        if nresults > nargs + 1 { self.checkstack_(nargs - nresults - 1) }
+        unsafe { self.pcall_unchecked(nargs, nresults, errfunc) }
+    }
+
+    /// Unchecked variant of pcall()
+    pub unsafe fn pcall_unchecked(&mut self, nargs: i32, nresults: i32, errfunc: i32)
+                                 -> Result<(),PCallError> {
+        match raw::lua_pcall(self.L, nargs as c_int, nresults as c_int, errfunc as c_int) {
+            0 => Ok(()),
+            raw::LUA_ERRRUN => Err(PCallError::ErrRun),
+            raw::LUA_ERRMEM => Err(PCallError::ErrMem),
+            raw::LUA_ERRERR => Err(PCallError::ErrErr),
+            _ => self.errorstr("unexpected error from lua_pcall")
+        }
+    }
+
+    // Don't bother wrapping cpcall, userdatas are unsafe in Rust and the better approach is just
+    // to call .pushcfunction() and .pcall().
+
     // load
     // dump
 
@@ -1263,7 +1316,7 @@ impl State {
     /// Loads a file as a Lua chunk (but does not run it).
     /// If the `filename` is None, this loads from standard input.
     /// Raises the c_str::null_byte condition if `filename` has any interior NULs.
-    pub fn loadfile(&mut self, filename: Option<&path::Path>) -> Option<LoadFileError> {
+    pub fn loadfile(&mut self, filename: Option<&path::Path>) -> Result<(),LoadFileError> {
         #[inline];
         self.checkstack_(1);
         unsafe { self.loadfile_unchecked(filename) }
@@ -1271,14 +1324,14 @@ impl State {
 
     /// Unchecked variant of loadfile()
     pub unsafe fn loadfile_unchecked(&mut self, filename: Option<&path::Path>)
-                                    -> Option<LoadFileError> {
+                                    -> Result<(),LoadFileError> {
         let cstr = filename.map(|p| p.to_c_str());
         let ptr = cstr.as_ref().map_default(ptr::null(), |cstr| cstr.with_ref(|p| p));
         match aux::raw::luaL_loadfile(self.L, ptr) {
-            0 => None,
-            raw::LUA_ERRSYNTAX => Some(LoadFileError::ErrSyntax),
-            raw::LUA_ERRMEM => Some(LoadFileError::ErrMem),
-            aux::raw::LUA_ERRFILE => Some(LoadFileError::ErrFile),
+            0 => Ok(()),
+            raw::LUA_ERRSYNTAX => Err(LoadFileError::ErrSyntax),
+            raw::LUA_ERRMEM => Err(LoadFileError::ErrMem),
+            aux::raw::LUA_ERRFILE => Err(LoadFileError::ErrFile),
             _ => self.errorstr("unexpected error from luaL_loadfile")
         }
     }
@@ -1287,21 +1340,21 @@ impl State {
     /// As far as Rust is concerned, this differ from loadstring() in that a name for the chunk
     /// is provided. It also allows for NUL bytes, but I expect Lua won't like those.
     /// Raises the c_str::null_byte condition if `name` has any interior NULs.
-    pub fn loadbuffer(&mut self, buff: &str, name: &str) -> Option<LoadError> {
+    pub fn loadbuffer(&mut self, buff: &str, name: &str) -> Result<(),LoadError> {
         #[inline];
         self.checkstack_(1);
         unsafe { self.loadbuffer_unchecked(buff, name) }
     }
 
     /// Unchecked variant of loadbuffer()
-    pub unsafe fn loadbuffer_unchecked(&mut self, buff: &str, name: &str) -> Option<LoadError> {
+    pub unsafe fn loadbuffer_unchecked(&mut self, buff: &str, name: &str) -> Result<(),LoadError> {
         buff.as_imm_buf(|bp, bsz| {
             let bp = bp as *libc::c_char;
             let bsz = bsz as libc::size_t;
             match name.with_c_str(|name| aux::raw::luaL_loadbuffer(self.L, bp, bsz, name)) {
-                0 => None,
-                raw::LUA_ERRSYNTAX => Some(LoadError::ErrSyntax),
-                raw::LUA_ERRMEM => Some(LoadError::ErrMem),
+                0 => Ok(()),
+                raw::LUA_ERRSYNTAX => Err(LoadError::ErrSyntax),
+                raw::LUA_ERRMEM => Err(LoadError::ErrMem),
                 _ => self.errorstr("unexpected error from luaL_loadbuffer")
             }
         })
@@ -1309,18 +1362,18 @@ impl State {
 
     /// Loads a string as a Lua chunk (but does not run it).
     /// Raises the c_str::null_byte condition if `s` has any interior NULs.
-    pub fn loadstring(&mut self, s: &str) -> Option<LoadError> {
+    pub fn loadstring(&mut self, s: &str) -> Result<(),LoadError> {
         #[inline];
         self.checkstack_(1);
         unsafe { self.loadstring_unchecked(s) }
     }
 
     /// Unchecked variant of loadstring()
-    pub unsafe fn loadstring_unchecked(&mut self, s: &str) -> Option<LoadError> {
+    pub unsafe fn loadstring_unchecked(&mut self, s: &str) -> Result<(),LoadError> {
         match s.with_c_str(|s| aux::raw::luaL_loadstring(self.L, s)) {
-            0 => None,
-            raw::LUA_ERRSYNTAX => Some(LoadError::ErrSyntax),
-            raw::LUA_ERRMEM => Some(LoadError::ErrMem),
+            0 => Ok(()),
+            raw::LUA_ERRSYNTAX => Err(LoadError::ErrSyntax),
+            raw::LUA_ERRMEM => Err(LoadError::ErrMem),
             _ => self.errorstr("unexpected error from luaL_loadstring")
         }
     }
