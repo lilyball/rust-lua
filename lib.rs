@@ -161,6 +161,15 @@ pub mod LoadError {
     }
 }
 
+impl ToStr for LoadError {
+    fn to_str(&self) -> ~str {
+        match *self {
+            LoadError::ErrSyntax => ~"syntax error",
+            LoadError::ErrMem => ~"memory allocation error"
+        }
+    }
+}
+
 /// State.loadfile() errors
 pub type LoadFileError = LoadFileError::LoadFileError;
 pub mod LoadFileError {
@@ -178,6 +187,16 @@ pub mod LoadFileError {
     }
 }
 
+impl ToStr for LoadFileError {
+    fn to_str(&self) -> ~str {
+        match *self {
+            LoadFileError::ErrSyntax => ~"syntax error",
+            LoadFileError::ErrMem => ~"memory allocation error",
+            LoadFileError::ErrFile => ~"file read/open error"
+        }
+    }
+}
+
 /// State.pcall() errors
 pub type PCallError = PCallError::PCallError;
 pub mod PCallError {
@@ -191,6 +210,16 @@ pub mod PCallError {
         ErrMem = raw::LUA_ERRMEM,
         /// Error while running the error handler function
         ErrErr = raw::LUA_ERRERR
+    }
+}
+
+impl ToStr for PCallError {
+    fn to_str(&self) -> ~str {
+        match *self {
+            PCallError::ErrRun => ~"runtime error",
+            PCallError::ErrMem => ~"memory allocation error",
+            PCallError::ErrErr => ~"error handler func error"
+        }
     }
 }
 
