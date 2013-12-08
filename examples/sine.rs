@@ -1,0 +1,20 @@
+extern mod lua;
+
+use std::{libc, num};
+
+mod common;
+
+fn main() {
+    let mut L = lua::State::new();
+    L.openlibs();
+    L.register("sin", my_sin);
+    common::repl(&mut L);
+}
+
+extern "C" fn my_sin(L: *mut lua::raw::lua_State) -> libc::c_int {
+    let mut L = unsafe { lua::State::from_lua_State(L, false) };
+    let input = L.checknumber(1);
+    let output = num::sin(input);
+    L.pushnumber(output);
+    1
+}

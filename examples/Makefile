@@ -1,9 +1,17 @@
 .PHONY: all clean
 
-all: simple
+EXAMPLES := simple sine
+
+USES_COMMON := sine
+
+all: $(EXAMPLES)
 
 clean:
-	rm simple
+	rm -f $(EXAMPLES)
 
-simple: simple.rs ../lua
-	rustc -L .. simple.rs
+define BUILD_EXAMPLE
+$(1): $(1).rs $(if $(filter $(1),$(USES_COMMON)),common.rs)
+	rustc -L .. $(1).rs
+endef
+
+$(foreach example,$(EXAMPLES),$(eval $(call BUILD_EXAMPLE,$(example))))
