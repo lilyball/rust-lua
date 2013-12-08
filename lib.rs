@@ -147,6 +147,12 @@ pub mod GC {
 /// Type that represents C functions that can be registered with Lua.
 pub type CFunction = raw::lua_CFunction;
 
+/// Function type for reading blocks when loading Lua chunks.
+pub type Reader = raw::lua_Reader;
+
+/// Function type for writing blocks when dumping Lua chunks.
+pub type Writer = raw::lua_Writer;
+
 /// State.load() errors
 pub type LoadError = LoadError::LoadError;
 pub mod LoadError {
@@ -517,10 +523,60 @@ impl State {
 
     /* Access functions */
 
-    // isnumber
-    // isstring
-    // iscfunction
-    // isuserdata
+    /// Returns `true` if the value at the given acceptable index is a number, or a string
+    /// convertible to a number.
+    pub fn isnumber(&mut self, idx: i32) -> bool {
+        #[inline];
+        self.check_acceptable(idx);
+        unsafe { self.isnumber_unchecked(idx) }
+    }
+
+    /// Unchecked variant of isnumber()
+    pub unsafe fn isnumber_unchecked(&mut self, idx: i32) -> bool {
+        #[inline];
+        raw::lua_isnumber(self.L, idx as c_int) != 0
+    }
+
+    /// Returns `true` if the value at the given acceptable index is a string or a number
+    /// (which is always convertible to a string).
+    pub fn isstring(&mut self, idx: i32) -> bool {
+        #[inline];
+        self.check_acceptable(idx);
+        unsafe { self.isstring_unchecked(idx) }
+    }
+
+    /// Unchecked variant of isstring()
+    pub unsafe fn isstring_unchecked(&mut self, idx: i32) -> bool {
+        #[inline];
+        raw::lua_isstring(self.L, idx as c_int) != 0
+    }
+
+    /// Returns `true` if the value at the given acceptable index is a C function.
+    pub fn iscfunction(&mut self, idx: i32) -> bool {
+        #[inline];
+        self.check_acceptable(idx);
+        unsafe { self.iscfunction_unchecked(idx) }
+    }
+
+    /// Unchecked variant of iscfunction()
+    pub unsafe fn iscfunction_unchecked(&mut self, idx: i32) -> bool {
+        #[inline];
+        raw::lua_iscfunction(self.L, idx as c_int) != 0
+    }
+
+    /// Returns `true` if the value at the given acceptable index is a userdata
+    /// (either full or light).
+    pub fn isuserdata(&mut self, idx: i32) -> bool {
+        #[inline];
+        self.check_acceptable(idx);
+        unsafe { self.isuserdata_unchecked(idx) }
+    }
+
+    /// Unchecked variant of isuserdata()
+    pub unsafe fn isuserdata_unchecked(&mut self, idx: i32) -> bool {
+        #[inline];
+        raw::lua_isuserdata(self.L, idx as c_int) != 0
+    }
 
     /// Returns the type of the value at the given acceptable index.
     /// If the given index is non-valid, returns None.
@@ -563,12 +619,80 @@ impl State {
         str::raw::c_str_to_static_slice(s)
     }
 
-    // equal
-    // rawequal
-    // lessthan
+    /// Returns `true` if the two values in acceptable indices `index1` and `index2` are equal,
+    /// following the semantics of the Lua == operator. Returns `false` if any indices are
+    /// non-valid.
+    pub fn equal(&mut self, index1: i32, index2: i32) -> bool {
+        #[inline];
+        self.check_acceptable(index1);
+        self.check_acceptable(index2);
+        unsafe { self.equal_unchecked(index1, index2) }
+    }
 
-    // tonumber
-    // tointeger
+    /// Unchecked variant of equal()
+    pub unsafe fn equal_unchecked(&mut self, index1: i32, index2: i32) -> bool {
+        #[inline];
+        raw::lua_equal(self.L, index1 as c_int, index2 as c_int) != 0
+    }
+
+    /// Returns `true` if the two values in acceptable indices `index1` and `index2` are
+    /// primitively equal (that is, without calling any metamethods). Returns `false` if any
+    /// indices are non-valid.
+    pub fn rawequal(&mut self, index1: i32, index2: i32) -> bool {
+        #[inline];
+        self.check_acceptable(index1);
+        self.check_acceptable(index2);
+        unsafe { self.rawequal_unchecked(index1, index2) }
+    }
+
+    /// Unchecked variant of rawequal()
+    pub unsafe fn rawequal_unchecked(&mut self, index1: i32, index2: i32) -> bool {
+        #[inline];
+        raw::lua_rawequal(self.L, index1 as c_int, index2 as c_int) != 0
+    }
+
+    /// Returns `true` if the value at acceptable index `index1` is smaller than the value at
+    /// acceptable index `index2`, following the semantics of the Lua < operator. Returns `false`
+    /// if any indices are non-valid.
+    pub fn lessthan(&mut self, index1: i32, index2: i32) -> bool {
+        #[inline];
+        self.check_acceptable(index1);
+        self.check_acceptable(index2);
+        unsafe { self.lessthan_unchecked(index1, index2) }
+    }
+
+    /// Unchecked variant of lessthan()
+    pub unsafe fn lessthan_unchecked(&mut self, index1: i32, index2: i32) -> bool {
+        raw::lua_lessthan(self.L, index1 as c_int, index2 as c_int) != 0
+    }
+
+    /// Converts the Lua value at the given acceptable index to a f64. The Lua value must be a
+    /// number or a string convertible to a number; otherwise, tonumber returns 0.
+    pub fn tonumber(&mut self, index: i32) -> f64 {
+        #[inline];
+        self.check_acceptable(index);
+        unsafe { self.tonumber_unchecked(index) }
+    }
+
+    /// Unchecked variant of tonumber()
+    pub unsafe fn tonumber_unchecked(&mut self, index: i32) -> f64 {
+        #[inline];
+        raw::lua_tonumber(self.L, index as c_int) as f64
+    }
+
+    /// Converts the Lua value at the given acceptable index to an int. The Lua value must be a
+    /// number or a string convertiable to a number; otherwise, toint returns 0.
+    pub fn tointeger(&mut self, index: i32) -> int {
+        #[inline];
+        self.check_acceptable(index);
+        unsafe { self.tointeger_unchecked(index) }
+    }
+
+    /// Unchecked variant of tointeger()
+    pub unsafe fn tointeger_unchecked(&mut self, index: i32) -> int {
+        #[inline];
+        raw::lua_tointeger(self.L, index as c_int) as int
+    }
 
     /// Converts the value at the given acceptable index to a bool.
     /// Returns false when called with a non-valid index.
@@ -630,10 +754,73 @@ impl State {
         }
     }
 
-    // objlen
-    // tocfunction
-    // touserdata
-    // tothread
+    /// Returns the "length" of the value at the given acceptable index.
+    pub fn objlen(&mut self, index: i32) -> uint {
+        #[inline];
+        self.check_acceptable(index);
+        unsafe { self.objlen_unchecked(index) }
+    }
+
+    /// Unchecked variant of objlen()
+    pub unsafe fn objlen_unchecked(&mut self, index: i32) -> uint {
+        #[inline];
+        raw::lua_objlen(self.L, index as c_int) as uint
+    }
+
+    /// Converts a value at the given acceptable index to a C function. The value must be a
+    /// C function; otherwise, returns None.
+    pub fn tocfunction(&mut self, index: i32) -> Option<CFunction> {
+        #[inline];
+        self.check_acceptable(index);
+        unsafe { self.tocfunction_unchecked(index) }
+    }
+
+    /// Unchecked variant of tocfunction()
+    pub unsafe fn tocfunction_unchecked(&mut self, index: i32) -> Option<CFunction> {
+        #[inline];
+        raw::lua_tocfunction(self.L, index as c_int)
+    }
+
+    /// If the value at the given acceptable index is a full userdata, returns its block address.
+    /// If the value is a light userdata, returns its pointer. Otherwise, returns None.
+    pub fn touserdata(&mut self, index: i32) -> Option<*mut libc::c_void> {
+        #[inline];
+        self.check_acceptable(index);
+        unsafe { self.touserdata_unchecked(index) }
+    }
+
+    /// Unchecked variant of touserdata()
+    pub unsafe fn touserdata_unchecked(&mut self, index: i32) -> Option<*mut libc::c_void> {
+        #[inline];
+        let ud = raw::lua_touserdata(self.L, index as c_int);
+        if ud.is_null() {
+            None
+        } else {
+            Some(ud)
+        }
+    }
+
+    /// Converts the value at the given acceptable index to a Lua thread (represented as a State).
+    /// This value must be a thread; otherwise, the method returns None.
+    ///
+    /// Note: the State return value does not make any assumptions about the available stack space.
+    /// .checkstack() must be called in order to consider any non-valid index as acceptable.
+    pub fn tothread(&mut self, index: i32) -> Option<State> {
+        #[inline];
+        self.check_acceptable(index);
+        unsafe { self.tothread_unchecked(index) }
+    }
+
+    /// Unchecked variant of tothread()
+    pub unsafe fn tothread_unchecked(&mut self, index: i32) -> Option<State> {
+        #[inline];
+        let s = raw::lua_tothread(self.L, index as c_int);
+        if s.is_null() {
+            None
+        } else {
+            Some(State::from_lua_State(s, false))
+        }
+    }
 
     /// Converts the value at the given acceptable index to a pointer.
     /// The value can be a userdata, a table, a thread, or a function.
@@ -754,8 +941,32 @@ impl State {
         raw::lua_pushboolean(self.L, b as c_int)
     }
 
-    // pushlightuserdata
-    // pushtthread
+    /// Pushes a light userdata onto the stack.
+    pub fn pushlightuserdata(&mut self, p: *mut libc::c_void) {
+        #[inline];
+        self.checkstack_(1);
+        unsafe { self.pushlightuserdata_unchecked(p) }
+    }
+
+    /// Unchecked variant of pushlightuserdata()
+    pub unsafe fn pushlightuserdata_unchecked(&mut self, p: *mut libc::c_void) {
+        #[inline];
+        raw::lua_pushlightuserdata(self.L, p)
+    }
+
+    /// Pushes the thread represented by `self` onto the stack. Returns `true` if this thread
+    /// is the main thread of the state.
+    pub fn pushthread(&mut self) -> bool {
+        #[inline];
+        self.checkstack_(1);
+        unsafe { self.pushthread_unchecked() }
+    }
+
+    /// Unchecked variant of pushthread()
+    pub unsafe fn pushthread_unchecked(&mut self) -> bool {
+        #[inline];
+        raw::lua_pushthread(self.L) != 0
+    }
 
     /* Get functions (Lua -> stack) */
 
@@ -790,21 +1001,192 @@ impl State {
         #[inline];
         k.with_c_str(|s| raw::lua_getfield(self.L, idx as c_int, s))
     }
-    // rawget
-    // rawgeti
-    // createtable
-    // newuserdata
-    // getmetatable
-    // getfenv
+
+    /// Similar to gettable(), but does a raw access
+    pub fn rawget(&mut self, index: i32) {
+        #[inline];
+        self.check_valid(index, true);
+        luaassert!(self, self.gettop() > 0, "stack underflow");
+        unsafe { self.rawget_unchecked(index) }
+    }
+
+    /// Unchecked variant of rawget()
+    pub unsafe fn rawget_unchecked(&mut self, index: i32) {
+        #[inline];
+        raw::lua_rawget(self.L, index as c_int)
+    }
+
+    /// Pushes onto the stack the value t[n], where t is the value at the given valid index.
+    /// The access is raw; that is, it does not invoke metamethods.
+    pub fn rawgeti(&mut self, index: i32, n: i32) {
+        #[inline];
+        self.check_valid(index, true);
+        self.checkstack_(1);
+        unsafe { self.rawgeti_unchecked(index, n) }
+    }
+
+    /// Unchecked variant of rawgeti()
+    pub unsafe fn rawgeti_unchecked(&mut self, index: i32, n: i32) {
+        #[inline];
+        raw::lua_rawgeti(self.L, index as c_int, n as c_int)
+    }
+
+    /// Creates a new empty table and pushes it into the stack. The new table has space
+    /// pre-allocated for `narr` array elements and `nrec` non-array elements.
+    pub fn createtable(&mut self, narr: i32, nrec: i32) {
+        #[inline];
+        self.checkstack_(1);
+        unsafe { self.createtable_unchecked(narr, nrec) }
+    }
+
+    /// Unchecked variant of createtable()
+    pub unsafe fn createtable_unchecked(&mut self, narr: i32, nrec: i32) {
+        #[inline];
+        raw::lua_createtable(self.L, narr as c_int, nrec as c_int)
+    }
+
+    /// This method allocates a new block of memory with the given size, pushes onto the stack a
+    /// new full userdata with the block address, and returns this address.
+    pub fn newuserdata(&mut self, size: uint) -> *mut libc::c_void {
+        #[inline];
+        self.checkstack_(1);
+        unsafe { self.newuserdata_unchecked(size) }
+    }
+
+    /// Unchecked variant of newuserdata()
+    pub unsafe fn newuserdata_unchecked(&mut self, size: uint) -> *mut libc::c_void {
+        #[inline];
+        raw::lua_newuserdata(self.L, size as libc::size_t)
+    }
+
+    /// Pushes onto the stack the metatable of the value at the given acceptable index. If the
+    /// index is not valid, or the value does not have a metatable, the function returns `false`
+    /// and pushes nothing onto the stack.
+    pub fn getmetatable(&mut self, index: i32) -> bool {
+        #[inline];
+        self.check_acceptable(index);
+        self.checkstack_(1);
+        unsafe { self.getmetatable_unchecked(index) }
+    }
+
+    /// Unchecked variant of getmetatable()
+    pub unsafe fn getmetatable_unchecked(&mut self, index: i32) -> bool {
+        #[inline];
+        raw::lua_getmetatable(self.L, index as c_int) != 0
+    }
+
+    /// Pushes onto the stack the environment table of the value at the given index.
+    pub fn getfenv(&mut self, index: i32) {
+        #[inline];
+        self.check_acceptable(index);
+        self.checkstack_(1);
+        unsafe { self.getfenv_unchecked(index) }
+    }
+
+    /// Unchecked variant of getfenv()
+    pub unsafe fn getfenv_unchecked(&mut self, index: i32) {
+        #[inline];
+        raw::lua_getfenv(self.L, index as c_int)
+    }
 
     /* Set functions (stack -> Lua) */
 
-    // settable
-    // setfield
-    // rawset
-    // rawseti
-    // setmetatable
-    // setfenv
+    /// Does the equivalent to t[k] = v, where t is the value at the given valid index, v is the
+    /// value at the top of the stack, and k is the value just below the top.
+    ///
+    /// This function pops both the key and the value from the stack.
+    pub fn settable(&mut self, index: i32) {
+        #[inline];
+        self.check_valid(index, true);
+        luaassert!(self, self.gettop() >= 2, "stack underflow");
+        unsafe { self.settable_unchecked(index) }
+    }
+
+    /// Unchecked variant of settable()
+    pub unsafe fn settable_unchecked(&mut self, index: i32) {
+        #[inline];
+        raw::lua_settable(self.L, index as c_int)
+    }
+
+    /// Does the equivalent to t[k] = v, where t is the value at the given valid index and v is
+    /// the value at the top of the stack.
+    ///
+    /// This function pops the value from the stack.
+    ///
+    /// Raises the `c_str::null_byte` condition if `k` contains interior NULs.
+    pub fn setfield(&mut self, index: i32, k: &str) {
+        #[inline];
+        self.check_valid(index, true);
+        luaassert!(self, self.gettop() >= 1, "stack underflow");
+        unsafe { self.setfield_unchecked(index, k) }
+    }
+
+    /// Unchecked variant of setfield()
+    pub unsafe fn setfield_unchecked(&mut self, index: i32, k: &str) {
+        k.with_c_str(|kp| raw::lua_setfield(self.L, index as c_int, kp))
+    }
+
+    /// Similar to settable(), but does a raw assignment.
+    pub fn rawset(&mut self, index: i32) {
+        #[inline];
+        self.check_valid(index, true);
+        luaassert!(self, self.gettop() >= 2, "stack underflow");
+        unsafe { self.rawset_unchecked(index) }
+    }
+
+    /// Unchecked variant of rawset()
+    pub unsafe fn rawset_unchecked(&mut self, index: i32) {
+        #[inline];
+        raw::lua_rawset(self.L, index as c_int)
+    }
+
+    /// Does the equivalent of t[n] = v, where t is the value at the given valid index and v is
+    /// the value at the top of the stack.
+    ///
+    /// This function pops the value from the stack. The assignment is raw; that is, it does not
+    /// invoke metamethods.
+    pub fn rawseti(&mut self, index: i32, n: i32) {
+        #[inline];
+        self.check_valid(index, true);
+        unsafe { self.rawseti_unchecked(index, n) }
+    }
+
+    /// Unchecked variant of rawseti()
+    pub unsafe fn rawseti_unchecked(&mut self, index: i32, n: i32) {
+        #[inline];
+        raw::lua_rawseti(self.L, index as c_int, n as c_int)
+    }
+
+    /// Pops a table from the stack and sets it as the new metatable for the value at the given
+    /// acceptable index.
+    pub fn setmetatable(&mut self, index: i32) {
+        #[inline];
+        self.check_acceptable(index);
+        luaassert!(self, self.istable(-1), "setmetatable: value must be a table")
+        unsafe { self.setmetatable_unchecked(index) }
+    }
+
+    /// Unchecked variant of setmetatable()
+    pub unsafe fn setmetatable_unchecked(&mut self, index: i32) {
+        #[inline];
+        // ignore return value of lua_setmetatable(), it appears to always be 1
+        raw::lua_setmetatable(self.L, index as c_int);
+    }
+
+    /// Pops a table from the stack and sets it as the new environment for the value at the given
+    /// index. If the value at the given index is neither a function nor a thread nor a userdata,
+    /// setfenv() returns `false`. Otherwise, returns `true`.
+    pub fn setfenv(&mut self, index: i32) -> bool {
+        #[inline];
+        self.check_acceptable(index);
+        unsafe { self.setfenv_unchecked(index) }
+    }
+
+    /// Unchecked variant of setfenv()
+    pub unsafe fn setfenv_unchecked(&mut self, index: i32) -> bool {
+        #[inline];
+        raw::lua_setfenv(self.L, index as c_int) != 0
+    }
 
     /* `load` and `call` functions (load and run Lua code) */
 
@@ -864,8 +1246,62 @@ impl State {
     // Don't bother wrapping cpcall, userdatas are unsafe in Rust and the better approach is just
     // to call .pushcfunction() and .pcall().
 
-    // load
-    // dump
+    /// Loads a Lua chunk. If there are no errors, load() pushes the compiled chunk as a Lua
+    /// function on top of the stack. Otherwise, it pushes an error message.
+    ///
+    /// This method only loads a chunk; it does not run it.
+    ///
+    /// load() automatically detects whether the chunk is text or binary, and loads it accordingly.
+    ///
+    /// The load() method uses a user-supplied `reader` function to read the chunk. The `data`
+    /// argument is an opaque value passed to the reader function.
+    ///
+    /// The `chunkname` argument gives a name to the chunk, which is used for error messages and
+    /// in debug information.
+    ///
+    /// Raises the `c_str::null_byte` condition if `chunkname` contains interior NULs.
+    pub fn load(&mut self, reader: Reader, data: *mut libc::c_void, chunkname: &str)
+               -> Result<(),LoadError> {
+        #[inline];
+        self.checkstack_(1);
+        unsafe { self.load_unchecked(reader, data, chunkname) }
+    }
+
+    /// Unchecked variant of load()
+    pub unsafe fn load_unchecked(&mut self, reader: Reader, data: *mut libc::c_void,
+                                 chunkname: &str) -> Result<(),LoadError> {
+        match chunkname.with_c_str(|name| raw::lua_load(self.L, reader, data, name)) {
+            0 => Ok(()),
+            raw::LUA_ERRSYNTAX => Err(LoadError::ErrSyntax),
+            raw::LUA_ERRMEM => Err(LoadError::ErrMem),
+            _ => self.errorstr("unexpected error from lua_load")
+        }
+    }
+
+    /// Dumps a function as a binary chunk. Receives a Lua function on the top of the stack and
+    /// produces a binary chunk that, if loaded again, results in a function equivalent to the
+    /// one dumped. As it produces parts of the chunk, dump() calls function `writer` with the
+    /// given `data` tow rite them.
+    ///
+    /// The value returned is the error code returned by the last call to the writer; Ok(()) means
+    /// no errors.
+    ///
+    /// Thisf unction does not pop the Lua function from the stack.
+    pub fn dump(&mut self, writer: Writer, data: *mut libc::c_void) -> Result<(),i32> {
+        #[inline];
+        luaassert!(self, self.gettop() >= 1, "stack underflow");
+        unsafe { self.dump_unchecked(writer, data) }
+    }
+
+    /// Unchecked variant of dump()
+    pub unsafe fn dump_unchecked(&mut self, writer: Writer, data: *mut libc::c_void)
+                                -> Result<(),i32> {
+        #[inline];
+        match raw::lua_dump(self.L, writer, data) {
+            0 => Ok(()),
+            i => Err(i)
+        }
+    }
 
     /* Coroutine functions */
 
@@ -935,8 +1371,20 @@ impl State {
         raw::lua_pop(self.L, n as c_int)
     }
 
-    // newtable
-    // register
+    /// Creates a new empty table and pushes it onto the stack.
+    /// It is equivalent to .createtable(0, 0).
+    pub fn newtable(&mut self) {
+        #[inline];
+        self.checkstack_(1);
+        unsafe { self.newtable_unchecked() }
+    }
+
+    /// Unchecked variant of newtable()
+    pub unsafe fn newtable_unchecked(&mut self) {
+        #[inline];
+        raw::lua_newtable(self.L)
+    }
+
     /// Sets the C function `f` as the new value of global `name`.
     /// Raises the `c_str::null_byte` condition if `name` has interior NULs
     pub fn register(&mut self, name: &str, f: CFunction) {
@@ -965,8 +1413,34 @@ impl State {
     }
 
     // strlen
-    // isfunction
-    // istable
+    /// Returns `true` if the value at the given acceptable index is a function
+    /// (either C or Lua).
+    pub fn isfunction(&mut self, index: i32) -> bool {
+        #[inline];
+        self.check_acceptable(index);
+        unsafe { self.isfunction_unchecked(index) }
+    }
+
+    /// Unchecked variant of isfunction()
+    pub unsafe fn isfunction_unchecked(&mut self, index: i32) -> bool {
+        #[inline];
+        raw::lua_isfunction(self.L, index as c_int)
+    }
+
+
+    /// Returns `true` if the value at the given acceptable index is a table.
+    pub fn istable(&mut self, index: i32) -> bool {
+        #[inline];
+        self.check_acceptable(index);
+        unsafe { self.istable_unchecked(index) }
+    }
+
+    /// Unchecked variant of istable()
+    pub unsafe fn istable_unchecked(&mut self, index: i32) -> bool {
+        #[inline];
+        raw::lua_istable(self.L, index as c_int)
+    }
+
     // islightuserdata
     // isnil
     // isboolean
@@ -1241,14 +1715,14 @@ impl State {
     // optnumber
 
     /// Checks whether the function argument `narg` is a number and returns it as an int.
-    pub fn checkint(&mut self, narg: i32) -> int {
+    pub fn checkinteger(&mut self, narg: i32) -> int {
         #[inline];
         self.check_acceptable(narg);
-        unsafe { self.checkint_unchecked(narg) }
+        unsafe { self.checkinteger_unchecked(narg) }
     }
 
-    /// Unchecked variant of checkint()
-    pub unsafe fn checkint_unchecked(&mut self, narg: i32) -> int {
+    /// Unchecked variant of checkinteger()
+    pub unsafe fn checkinteger_unchecked(&mut self, narg: i32) -> int {
         #[inline];
         aux::raw::luaL_checkinteger(self.L, narg as c_int) as int
     }

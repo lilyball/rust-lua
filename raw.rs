@@ -95,7 +95,7 @@ extern {
     pub fn lua_tolstring(L: *mut lua_State, idx: c_int,
                             len: *mut libc::size_t) -> *libc::c_char;
     pub fn lua_objlen(L: *mut lua_State, idx: c_int) -> libc::size_t;
-    pub fn lua_tocfunction(L: *mut lua_State, idx: c_int) -> lua_CFunction;
+    pub fn lua_tocfunction(L: *mut lua_State, idx: c_int) -> Option<lua_CFunction>;
     pub fn lua_touserdata(L: *mut lua_State, idx: c_int) -> *mut libc::c_void;
     pub fn lua_tothread(L: *mut lua_State, idx: c_int) -> *mut lua_State;
     pub fn lua_topointer(L: *mut lua_State, idx: c_int) -> *libc::c_void;
@@ -112,7 +112,7 @@ extern {
     pub fn lua_pushfstring(L: *mut lua_State, fmt: *libc::c_char, ...) -> *libc::c_char;
     pub fn lua_pushcclosure(L: *mut lua_State, f: lua_CFunction, n: c_int);
     pub fn lua_pushboolean(L: *mut lua_State, b: c_int);
-    pub fn lua_pushlightuserdata(L: *mut lua_State, p: *libc::c_void);
+    pub fn lua_pushlightuserdata(L: *mut lua_State, p: *mut libc::c_void);
     pub fn lua_pushthread(L: *mut lua_State) -> c_int;
 }
 

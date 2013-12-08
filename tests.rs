@@ -1,8 +1,9 @@
 use State;
 use GLOBALSINDEX;
 use Type;
+use raw;
 
-use std::task;
+use std::{libc, task};
 
 #[test]
 fn test_state_init() {
@@ -99,4 +100,19 @@ fn test_checkoption() {
         s.checkoption(1, Some("four"), lst);
     };
     assert!(res.is_err(), "expected error from checkoption");
+}
+
+#[test]
+fn test_tocfunction() {
+    let mut s = State::new();
+
+    // extern "C" fns don't implement Eq, so cast them to a pointer instead
+
+    s.pushstring("foo");
+    assert_eq!(s.tocfunction(1).map(|f| f as *()), None);
+
+    s.pushcfunction(cfunc);
+    assert_eq!(s.tocfunction(2).map(|f| f as *()), Some(cfunc as *()));
+
+    extern "C" fn cfunc(_L: *mut raw::lua_State) -> libc::c_int { 0 }
 }
