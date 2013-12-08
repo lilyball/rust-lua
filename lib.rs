@@ -8,6 +8,8 @@
 #[license = "MIT"];
 #[crate_type = "rlib"];
 
+#[feature(macro_rules)];
+
 #[warn(missing_doc)];
 
 use std::libc;
@@ -54,6 +56,20 @@ pub mod lib;
 
 #[cfg(test)]
 mod tests;
+
+macro_rules! luaassert{
+    ($state:expr, $cond:expr, $msg:expr) => {
+        if !$cond {
+            $state.errorstr($msg);
+        }
+    };
+    ($state:expr, $cond:expr, $($arg:expr),+) => {
+        if !$cond {
+            let msg = format!($($arg),+);
+            $state.errorstr(msg);
+        }
+    }
+}
 
 /// Lua value type
 pub type Type = Type::Type;
@@ -247,33 +263,33 @@ impl State {
     fn check_acceptable(&mut self, idx: i32) {
         #[inline];
         if idx > 0 {
-            assert!(idx <= self.stackspace, "index {} is not acceptable (stack space is {})",
+            luaassert!(self, idx <= self.stackspace, "index {} is not acceptable (stack space is {})",
                     idx, self.stackspace);
         } else if idx < 0 {
             self.check_valid(idx, true);
         } else {
-            fail!("index 0 is not acceptable");
+            self.errorstr("index 0 is not acceptable");
         }
     }
 
     fn check_valid(&mut self, idx: i32, allowpseudo: bool) {
         #[inline];
         match idx {
-            0 => fail!("index 0 is not valid"),
+            0 => self.errorstr("index 0 is not valid"),
             GLOBALSINDEX |
             REGISTRYINDEX |
-            ENVIRONINDEX => assert!(allowpseudo, "Pseudo-indices are not valid for this call"),
+            ENVIRONINDEX => luaassert!(self, allowpseudo, "Pseudo-indices are not valid for this call"),
             _ if idx < GLOBALSINDEX => {
-                assert!(allowpseudo, "Pseudo-indices are not valid for this call");
+                luaassert!(self, allowpseudo, "Pseudo-indices are not valid for this call");
                 // we can't actually test for upvalue validity
                 // at least not without using lua_Debug, which seems excessive.
                 // However, I think that invalid but acceptable upvalues are treated as nil
                 let upvalidx = GLOBALSINDEX - idx;
-                assert!(upvalidx <= 256, "upvalue index {} is out of range", upvalidx);
+                luaassert!(self, upvalidx <= 256, "upvalue index {} is out of range", upvalidx);
             }
             _ => {
                 let top = self.gettop();
-                assert!(idx.abs() <= top, "index {} is not valid (stack top is {})", idx, top);
+                luaassert!(self, idx.abs() <= top, "index {} is not valid (stack top is {})", idx, top);
             }
         }
     }
@@ -429,7 +445,7 @@ impl State {
     /// Ensures the stack contains at least `extra` free slots on the stack.
     /// Fails if it cannot grow the stack.
     pub fn checkstack_(&mut self, extra: i32) {
-        assert!(self.checkstack(extra), "cannot grow stack");
+        luaassert!(self, self.checkstack(extra), "cannot grow stack")
     }
 
     /// Exchanges values between different threads of the same global state.
@@ -441,7 +457,7 @@ impl State {
     /// Despite being unsafe, it still checks the validity of `n`.
     pub unsafe fn xmove(&mut self, to: &mut State, n: i32) {
         #[inline];
-        assert!(self.gettop() >= n);
+        luaassert!(self, self.gettop() >= n, "stack underflow");
         to.checkstack_(1);
         self.xmove_unchecked(to, n)
     }
@@ -482,7 +498,7 @@ impl State {
             raw::LUA_TUSERDATA      => Some(Type::Userdata),
             raw::LUA_TTHREAD        => Some(Type::Thread),
 
-            _ => fail!("Unknown return value from lua_type")
+            _ => self.errorstr("Unknown return value from lua_type")
         }
     }
 
@@ -702,7 +718,7 @@ impl State {
     pub fn gettable(&mut self, idx: i32) {
         #[inline];
         self.check_valid(idx, true);
-        assert!(self.gettop() > 0, "stack underflow");
+        luaassert!(self, self.gettop() > 0, "stack underflow");
         unsafe { self.gettable_unchecked(idx) }
     }
 
@@ -752,9 +768,9 @@ impl State {
     /// case all function results are pushed.
     pub fn call(&mut self, nargs: i32, nresults: i32) {
         #[inline];
-        assert!(nargs >= 0, "invalid nargs");
-        assert!(nresults == MULTRET || nresults >= 0, "invalid nresults");
-        assert!(self.gettop() > nargs, "stack underflow");
+        luaassert!(self, nargs >= 0, "invalid nargs");
+        luaassert!(self, nresults == MULTRET || nresults >= 0, "invalid nresults");
+        luaassert!(self, self.gettop() > nargs, "stack underflow");
         if nresults > nargs + 1 { self.checkstack_(nargs - nresults - 1) }
         unsafe { self.call_unchecked(nargs, nresults) }
     }
@@ -784,7 +800,7 @@ impl State {
     /// Raises an error (using the value at the top of the stack)
     pub fn error(&mut self) -> ! {
         #[inline];
-        assert!(self.gettop() > 0, "Stack underflow");
+        luaassert!(self, self.gettop() > 0, "Stack underflow");
         unsafe { self.error_unchecked() }
     }
 
@@ -802,8 +818,8 @@ impl State {
     /// Fails if n is negative or larger than the stack top.
     pub fn concat(&mut self, n: i32) {
         #[inline];
-        assert!(n >= 0, "Cannot concat negative elements");
-        assert!(n <= self.gettop(), "Stack underflow");
+        luaassert!(self, n >= 0, "Cannot concat negative elements");
+        luaassert!(self, n <= self.gettop(), "Stack underflow");
         if n == 0 { self.checkstack_(1) }
         unsafe { self.concat_unchecked(n) }
     }
@@ -824,9 +840,9 @@ impl State {
     pub fn pop(&mut self, n: i32) {
         #[inline];
         if n >= 0 {
-            assert!(self.gettop() >= n, "Stack underflow");
+            luaassert!(self, self.gettop() >= n, "Stack underflow");
         } else {
-            assert!(self.gettop() >= (n+1).abs(), "Stack underflow");
+            luaassert!(self, self.gettop() >= (n+1).abs(), "Stack underflow");
         }
         unsafe { self.pop_unchecked(n) }
     }
@@ -880,7 +896,7 @@ impl State {
     /// Raises the `c_str::null_byte` condition if `name` has interior NULs.
     pub fn setglobal(&mut self, name: &str) {
         #[inline];
-        assert!(self.gettop() > 0, "stack underflow");
+        luaassert!(self, self.gettop() > 0, "stack underflow");
         unsafe { self.setglobal_unchecked(name) }
     }
 
@@ -1254,7 +1270,7 @@ impl State {
             raw::LUA_ERRSYNTAX => Some(LoadFileError::ErrSyntax),
             raw::LUA_ERRMEM => Some(LoadFileError::ErrMem),
             aux::raw::LUA_ERRFILE => Some(LoadFileError::ErrFile),
-            _ => fail!("unexpected error from luaL_loadfile")
+            _ => self.errorstr("unexpected error from luaL_loadfile")
         }
     }
 
@@ -1277,7 +1293,7 @@ impl State {
                 0 => None,
                 raw::LUA_ERRSYNTAX => Some(LoadError::ErrSyntax),
                 raw::LUA_ERRMEM => Some(LoadError::ErrMem),
-                _ => fail!("unexpected error from luaL_loadbuffer")
+                _ => self.errorstr("unexpected error from luaL_loadbuffer")
             }
         })
     }
@@ -1296,7 +1312,7 @@ impl State {
             0 => None,
             raw::LUA_ERRSYNTAX => Some(LoadError::ErrSyntax),
             raw::LUA_ERRMEM => Some(LoadError::ErrMem),
-            _ => fail!("unexpected error from luaL_loadstring")
+            _ => self.errorstr("unexpected error from luaL_loadstring")
         }
     }
     // gsub
