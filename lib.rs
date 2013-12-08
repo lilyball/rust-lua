@@ -1333,11 +1333,13 @@ impl State {
     // buffinit
 }
 
+/// String buffer for building Lua strings piecemeal
 pub struct Buffer<'a> {
     priv B: aux::raw::luaL_Buffer,
     priv _L: &'a State // luaL_Buffer keeps a *-ptr to the underlying state
 }
 
+/// Size of the internal buffer used by Buffer and returned by prepbuffer()
 pub static BUFFERSIZE: u32 = aux::raw::LUAL_BUFFERSIZE;
 
 impl<'a> Buffer<'a> {
