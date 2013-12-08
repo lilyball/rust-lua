@@ -1095,6 +1095,15 @@ impl State {
     // callmeta
     // typerror
     // argerror
+    /// Raises an error with the following message, where `func` is taken from the call stack:
+    ///
+    ///   bad argument #<narg> to <func> (<extramsg>)
+    pub fn argerror(&mut self, narg: i32, extramsg: &str) -> ! {
+        extramsg.with_c_str(|msg| {
+            unsafe { aux::raw::luaL_argerror(self.L, narg as c_int, msg); }
+            unreachable!()
+        })
+    }
 
     /// Checks whether the function argument `narg` is a string, and returns the string.
     /// This function uses lua_tolstring to get its result, so all conversions and caveats of
@@ -1319,9 +1328,17 @@ impl State {
 
     /* Some useful functions (macros in C) */
 
-    // argcheck
-    // checkstring
-    // optstring
+    /// Checks whether `cond` is true. If not, raises an error with the following messag, where
+    /// `func` is retrieved from the call stack:
+    ///
+    ///   bad argument #<narg> to <func> (<extramsg>)
+    ///
+    /// Raises the `c_str::null_byte` condition if `extramsg` has interior NULs.
+    pub fn argcheck(&mut self, cond: bool, narg: i32, extramsg: &str) {
+        extramsg.with_c_str(|msg| {
+            unsafe { aux::raw::luaL_argcheck(self.L, cond, narg as c_int, msg) }
+        })
+    }
     // typename
     // dofile
     // dostring

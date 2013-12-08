@@ -70,7 +70,7 @@ pub mod raw {
     // Some useful functions (macros in C)
     #[inline(always)]
     pub unsafe fn luaL_argcheck(L: *mut lua_State, cond: bool, numarg: c_int, extramsg: *libc::c_char) {
-        if cond {
+        if !cond {
             luaL_argerror(L, numarg, extramsg);
         }
     }
