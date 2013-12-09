@@ -500,7 +500,7 @@ impl State {
     /// Ensures the stack contains at least `extra` free slots on the stack.
     /// Fails if it cannot grow the stack.
     pub fn checkstack_(&mut self, extra: i32) {
-        luaassert!(self, self.checkstack(extra), "cannot grow stack")
+        luaassert!(self, self.checkstack(extra), "checkstack: cannot grow stack")
     }
 
     /// Exchanges values between different threads of the same global state.
@@ -512,7 +512,7 @@ impl State {
     /// Despite being unsafe, it still checks the validity of `n`.
     pub unsafe fn xmove(&mut self, to: &mut State, n: i32) {
         #[inline];
-        luaassert!(self, self.gettop() >= n, "stack underflow");
+        luaassert!(self, self.gettop() >= n, "xmove: stack underflow");
         to.checkstack_(1);
         self.xmove_unchecked(to, n)
     }
@@ -603,7 +603,7 @@ impl State {
             raw::LUA_TUSERDATA      => Some(Type::Userdata),
             raw::LUA_TTHREAD        => Some(Type::Thread),
 
-            _ => self.errorstr("Unknown return value from lua_type")
+            _ => self.errorstr("type: Unknown return value from lua_type")
         }
     }
 
@@ -848,7 +848,6 @@ impl State {
     }
 
     /// Unchecked variant of pushnil().
-    /// Skips the call to checkstack().
     pub unsafe fn pushnil_unchecked(&mut self) {
         #[inline];
         raw::lua_pushnil(self.L)
@@ -862,7 +861,6 @@ impl State {
     }
 
     /// Unchecked variant of pushnumber().
-    /// Skips the call to checkstack().
     pub unsafe fn pushnumber_unchecked(&mut self, n: f64) {
         #[inline];
         raw::lua_pushnumber(self.L, n as raw::lua_Number)
@@ -876,7 +874,6 @@ impl State {
     }
 
     /// Unchecked variant of pushinteger().
-    /// Skips the call to checkstack().
     pub unsafe fn pushinteger_unchecked(&mut self, n: int) {
         #[inline];
         raw::lua_pushinteger(self.L, n as raw::lua_Integer)
@@ -890,7 +887,6 @@ impl State {
     }
 
     /// Unchecked variant of pushstring().
-    /// Skips the call to checkstack().
     pub unsafe fn pushstring_unchecked(&mut self, s: &str) {
         #[inline];
         s.as_imm_buf(|buf, len| {
@@ -914,16 +910,25 @@ impl State {
     }
 
     /// Pushes a new C closure onto the stack.
+    ///
+    /// When a C function is created, it is possible to associate some values with it, thus
+    /// creating a C closure; these values are then accessible to the function whenever it is
+    /// called. These values must be pushed onto the stack (in order), then pushclosure() is called
+    /// to create and push the C closure onto the stack. The argument `n` is the number of values
+    /// that should be associated with the function. These values are popped from the stack.
+    ///
+    /// `n` must be in the range [0, 255]. Anything outside this range will cause a failure.
     pub fn pushcclosure(&mut self, f: CFunction, n: i32) {
         #[inline];
         if n == 0 {
             self.checkstack_(1);
+        } else {
+            luaassert!(self, n >= 0 && n <= 255, "pushcclosure: invalid argument n");
         }
         unsafe { self.pushcclosure_unchecked(f, n) }
     }
 
     /// Unchecked variant of pushcclosure().
-    /// Skips the call to checkstack().
     pub unsafe fn pushcclosure_unchecked(&mut self, f: CFunction, n: i32) {
         #[inline];
         raw::lua_pushcclosure(self.L, f, n as c_int)
@@ -937,7 +942,6 @@ impl State {
     }
 
     /// Unchecked variant of pushboolean().
-    /// Skips the call to checkstack().
     pub unsafe fn pushboolean_unchecked(&mut self, b: bool) {
         #[inline];
         raw::lua_pushboolean(self.L, b as c_int)
@@ -978,7 +982,7 @@ impl State {
     pub fn gettable(&mut self, idx: i32) {
         #[inline];
         self.check_valid(idx, true);
-        luaassert!(self, self.gettop() > 0, "stack underflow");
+        luaassert!(self, self.gettop() > 0, "gettable: stack underflow");
         unsafe { self.gettable_unchecked(idx) }
     }
 
@@ -1008,7 +1012,7 @@ impl State {
     pub fn rawget(&mut self, index: i32) {
         #[inline];
         self.check_valid(index, true);
-        luaassert!(self, self.gettop() > 0, "stack underflow");
+        luaassert!(self, self.gettop() > 0, "rawget: stack underflow");
         unsafe { self.rawget_unchecked(index) }
     }
 
@@ -1100,7 +1104,7 @@ impl State {
     pub fn settable(&mut self, index: i32) {
         #[inline];
         self.check_valid(index, true);
-        luaassert!(self, self.gettop() >= 2, "stack underflow");
+        luaassert!(self, self.gettop() >= 2, "settable: stack underflow");
         unsafe { self.settable_unchecked(index) }
     }
 
@@ -1119,7 +1123,7 @@ impl State {
     pub fn setfield(&mut self, index: i32, k: &str) {
         #[inline];
         self.check_valid(index, true);
-        luaassert!(self, self.gettop() >= 1, "stack underflow");
+        luaassert!(self, self.gettop() >= 1, "setfield: stack underflow");
         unsafe { self.setfield_unchecked(index, k) }
     }
 
@@ -1132,7 +1136,7 @@ impl State {
     pub fn rawset(&mut self, index: i32) {
         #[inline];
         self.check_valid(index, true);
-        luaassert!(self, self.gettop() >= 2, "stack underflow");
+        luaassert!(self, self.gettop() >= 2, "rawset: stack underflow");
         unsafe { self.rawset_unchecked(index) }
     }
 
@@ -1164,7 +1168,7 @@ impl State {
     pub fn setmetatable(&mut self, index: i32) {
         #[inline];
         self.check_acceptable(index);
-        luaassert!(self, self.istable(-1), "setmetatable: value must be a table")
+        luaassert!(self, self.istable(-1), "setmetatable: top stack value must be a table")
         unsafe { self.setmetatable_unchecked(index) }
     }
 
@@ -1181,6 +1185,7 @@ impl State {
     pub fn setfenv(&mut self, index: i32) -> bool {
         #[inline];
         self.check_acceptable(index);
+        luaassert!(self, self.istable(-1), "setfenv: top stack value must be a table");
         unsafe { self.setfenv_unchecked(index) }
     }
 
@@ -1199,9 +1204,9 @@ impl State {
     /// case all function results are pushed.
     pub fn call(&mut self, nargs: i32, nresults: i32) {
         #[inline];
-        luaassert!(self, nargs >= 0, "invalid nargs");
-        luaassert!(self, nresults == MULTRET || nresults >= 0, "invalid nresults");
-        luaassert!(self, self.gettop() > nargs, "stack underflow");
+        luaassert!(self, nargs >= 0, "call: invalid nargs");
+        luaassert!(self, nresults == MULTRET || nresults >= 0, "call: invalid nresults");
+        luaassert!(self, self.gettop() > nargs, "call: stack underflow");
         if nresults > nargs + 1 { self.checkstack_(nargs - nresults - 1) }
         unsafe { self.call_unchecked(nargs, nresults) }
     }
@@ -1223,9 +1228,9 @@ impl State {
     /// It must not be a pseudo-index.
     pub fn pcall(&mut self, nargs: i32, nresults: i32, errfunc: i32) -> Result<(),PCallError> {
         #[inline];
-        luaassert!(self, nargs >= 0, "invalid nargs");
-        luaassert!(self, nresults == MULTRET || nresults >= 0, "invalid nresults");
-        luaassert!(self, self.gettop() > nargs, "stack underflow");
+        luaassert!(self, nargs >= 0, "pcall: invalid nargs");
+        luaassert!(self, nresults == MULTRET || nresults >= 0, "pcall: invalid nresults");
+        luaassert!(self, self.gettop() > nargs, "pcall: stack underflow");
         if errfunc != 0 {
             self.check_valid(errfunc, false)
         }
@@ -1241,7 +1246,7 @@ impl State {
             raw::LUA_ERRRUN => Err(PCallError::ErrRun),
             raw::LUA_ERRMEM => Err(PCallError::ErrMem),
             raw::LUA_ERRERR => Err(PCallError::ErrErr),
-            _ => self.errorstr("unexpected error from lua_pcall")
+            _ => self.errorstr("pcall: unexpected error from lua_pcall")
         }
     }
 
@@ -1276,7 +1281,7 @@ impl State {
             0 => Ok(()),
             raw::LUA_ERRSYNTAX => Err(LoadError::ErrSyntax),
             raw::LUA_ERRMEM => Err(LoadError::ErrMem),
-            _ => self.errorstr("unexpected error from lua_load")
+            _ => self.errorstr("load: unexpected error from lua_load")
         }
     }
 
@@ -1291,7 +1296,7 @@ impl State {
     /// Thisf unction does not pop the Lua function from the stack.
     pub fn dump(&mut self, writer: Writer, data: *mut libc::c_void) -> Result<(),i32> {
         #[inline];
-        luaassert!(self, self.gettop() >= 1, "stack underflow");
+        luaassert!(self, self.gettop() >= 1, "dump: stack underflow");
         unsafe { self.dump_unchecked(writer, data) }
     }
 
@@ -1320,7 +1325,7 @@ impl State {
     /// Raises an error (using the value at the top of the stack)
     pub fn error(&mut self) -> ! {
         #[inline];
-        luaassert!(self, self.gettop() > 0, "Stack underflow");
+        luaassert!(self, self.gettop() > 0, "error: stack underflow");
         unsafe { self.error_unchecked() }
     }
 
@@ -1338,8 +1343,8 @@ impl State {
     /// Fails if n is negative or larger than the stack top.
     pub fn concat(&mut self, n: i32) {
         #[inline];
-        luaassert!(self, n >= 0, "Cannot concat negative elements");
-        luaassert!(self, n <= self.gettop(), "Stack underflow");
+        luaassert!(self, n >= 0, "concat: invalid argument n");
+        luaassert!(self, n <= self.gettop(), "concat: stack underflow");
         if n == 0 { self.checkstack_(1) }
         unsafe { self.concat_unchecked(n) }
     }
@@ -1360,9 +1365,9 @@ impl State {
     pub fn pop(&mut self, n: i32) {
         #[inline];
         if n >= 0 {
-            luaassert!(self, self.gettop() >= n, "Stack underflow");
+            luaassert!(self, self.gettop() >= n, "pop: stack underflow");
         } else {
-            luaassert!(self, self.gettop() >= (n+1).abs(), "Stack underflow");
+            luaassert!(self, self.gettop() >= (n+1).abs(), "pop: stack underflow");
         }
         unsafe { self.pop_unchecked(n) }
     }
@@ -1454,7 +1459,7 @@ impl State {
     /// Raises the `c_str::null_byte` condition if `name` has interior NULs.
     pub fn setglobal(&mut self, name: &str) {
         #[inline];
-        luaassert!(self, self.gettop() > 0, "stack underflow");
+        luaassert!(self, self.gettop() > 0, "setglobal: stack underflow");
         unsafe { self.setglobal_unchecked(name) }
     }
 
@@ -1514,8 +1519,8 @@ impl State {
     /// Skips the call to checkstack().
     pub unsafe fn open_base_unchecked(&mut self) {
         #[inline];
-        self.pushcfunction(lib::raw::luaopen_base);
-        self.pushstring("");
+        self.pushcfunction_unchecked(lib::raw::luaopen_base);
+        self.pushstring_unchecked("");
         self.call(1, 0);
     }
 
@@ -1530,8 +1535,8 @@ impl State {
     /// Skips the call to checkstack().
     pub unsafe fn open_table_unchecked(&mut self) {
         #[inline];
-        self.pushcfunction(lib::raw::luaopen_table);
-        self.pushstring(TABLIBNAME);
+        self.pushcfunction_unchecked(lib::raw::luaopen_table);
+        self.pushstring_unchecked(TABLIBNAME);
         self.call(1, 0);
     }
 
@@ -1546,8 +1551,8 @@ impl State {
     /// Skips the call to checkstack().
     pub unsafe fn open_io_unchecked(&mut self) {
         #[inline];
-        self.pushcfunction(lib::raw::luaopen_io);
-        self.pushstring(IOLIBNAME);
+        self.pushcfunction_unchecked(lib::raw::luaopen_io);
+        self.pushstring_unchecked(IOLIBNAME);
         self.call(1, 0);
     }
 
@@ -1562,8 +1567,8 @@ impl State {
     /// Skips the call to checkstack().
     pub unsafe fn open_os_unchecked(&mut self) {
         #[inline];
-        self.pushcfunction(lib::raw::luaopen_os);
-        self.pushstring(OSLIBNAME);
+        self.pushcfunction_unchecked(lib::raw::luaopen_os);
+        self.pushstring_unchecked(OSLIBNAME);
         self.call(1, 0);
     }
 
@@ -1578,8 +1583,8 @@ impl State {
     /// Skips the call to checkstack().
     pub unsafe fn open_string_unchecked(&mut self) {
         #[inline];
-        self.pushcfunction(lib::raw::luaopen_string);
-        self.pushstring(STRLIBNAME);
+        self.pushcfunction_unchecked(lib::raw::luaopen_string);
+        self.pushstring_unchecked(STRLIBNAME);
         self.call(1, 0);
     }
 
@@ -1594,8 +1599,8 @@ impl State {
     /// Skips the call to checkstack().
     pub unsafe fn open_math_unchecked(&mut self) {
         #[inline];
-        self.pushcfunction(lib::raw::luaopen_math);
-        self.pushstring(MATHLIBNAME);
+        self.pushcfunction_unchecked(lib::raw::luaopen_math);
+        self.pushstring_unchecked(MATHLIBNAME);
         self.call(1, 0);
     }
 
@@ -1610,8 +1615,8 @@ impl State {
     /// Skips the call to checkstack().
     pub unsafe fn open_debug_unchecked(&mut self) {
         #[inline];
-        self.pushcfunction(lib::raw::luaopen_debug);
-        self.pushstring(DBLIBNAME);
+        self.pushcfunction_unchecked(lib::raw::luaopen_debug);
+        self.pushstring_unchecked(DBLIBNAME);
         self.call(1, 0);
     }
 
@@ -1626,8 +1631,8 @@ impl State {
     /// Skips the call to checkstack().
     pub unsafe fn open_package_unchecked(&mut self) {
         #[inline];
-        self.pushcfunction(lib::raw::luaopen_package);
-        self.pushstring(LOADLIBNAME);
+        self.pushcfunction_unchecked(lib::raw::luaopen_package);
+        self.pushstring_unchecked(LOADLIBNAME);
         self.call(1, 0);
     }
 
@@ -1753,14 +1758,9 @@ impl State {
     /// the running function, etc.
     pub fn where(&mut self, lvl: i32) {
         #[inline];
-        self.checkstack_(1);
-        unsafe { self.where_unchecked(lvl) }
-    }
-
-    /// Unchecked variant of where()
-    pub unsafe fn where_unchecked(&mut self, lvl: i32) {
-        #[inline];
-        aux::raw::luaL_where(self.L, lvl as c_int)
+        // luaL_where() internally uses lua_pushfstring(), which manages stack size itself
+        // so we don't need to call checkstack()
+        unsafe { aux::raw::luaL_where(self.L, lvl as c_int) }
     }
 
     /// Raises an error with the given string.
@@ -1774,7 +1774,7 @@ impl State {
 
     /// Unchecked variant of errorstr()
     pub unsafe fn errorstr_unchecked(&mut self, s: &str) -> ! {
-        self.where_unchecked(1);
+        self.where(1);
         self.pushstring(s);
         self.concat_unchecked(2);
         raw::lua_error(self.L);
@@ -1837,7 +1837,7 @@ impl State {
             raw::LUA_ERRSYNTAX => Err(LoadFileError::ErrSyntax),
             raw::LUA_ERRMEM => Err(LoadFileError::ErrMem),
             aux::raw::LUA_ERRFILE => Err(LoadFileError::ErrFile),
-            _ => self.errorstr("unexpected error from luaL_loadfile")
+            _ => self.errorstr("loadfile: unexpected error from luaL_loadfile")
         }
     }
 
@@ -1860,7 +1860,7 @@ impl State {
                 0 => Ok(()),
                 raw::LUA_ERRSYNTAX => Err(LoadError::ErrSyntax),
                 raw::LUA_ERRMEM => Err(LoadError::ErrMem),
-                _ => self.errorstr("unexpected error from luaL_loadbuffer")
+                _ => self.errorstr("loadbuffer: unexpected error from luaL_loadbuffer")
             }
         })
     }
@@ -1879,14 +1879,14 @@ impl State {
             0 => Ok(()),
             raw::LUA_ERRSYNTAX => Err(LoadError::ErrSyntax),
             raw::LUA_ERRMEM => Err(LoadError::ErrMem),
-            _ => self.errorstr("unexpected error from luaL_loadstring")
+            _ => self.errorstr("loadstring: unexpected error from luaL_loadstring")
         }
     }
     // gsub
 
     /* Some useful functions (macros in C) */
 
-    /// Checks whether `cond` is true. If not, raises an error with the following messag, where
+    /// Checks whether `cond` is true. If not, raises an error with the following message, where
     /// `func` is retrieved from the call stack:
     ///
     ///   bad argument #<narg> to <func> (<extramsg>)
