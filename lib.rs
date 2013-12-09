@@ -1389,7 +1389,14 @@ impl State {
 
     /* Garbage collection functions */
 
-    // gc
+    /// Controls the garbage collector.
+    ///
+    /// This method performs several tasks, according to the value of the parameter `what`.
+    /// See the `GC` enum for documentation on the various options.
+    pub fn gc(&mut self, what: GC, data: i32) -> i32 {
+        #[inline];
+        unsafe { raw::lua_gc(self.L, what as c_int, data as c_int) as i32 }
+    }
 
     /* Miscellaneous functions */
 
@@ -1407,7 +1414,35 @@ impl State {
         unreachable!()
     }
 
-    // next
+    /// Pops a key from the stack, and pushes a key-value pair from the table at the given index
+    /// (the "next" pair after the given key). If there are no more elements in the table, then
+    /// next() returns false (and pushes nothing).
+    ///
+    /// A typical traversal looks like this:
+    ///
+    ///   /* table is in the stack at index 't' */
+    ///   L.pushnil(); // first key
+    ///   while L.next(t) {
+    ///     /* uses 'key' (at index -2) and 'value' (at index -1) */
+    ///     println!("{} - {}", L.typename(-2), L.typename(-1));
+    ///     /* removes 'value'; keeps 'key' for next iteration */
+    ///     L.pop(1);
+    ///   }
+    ///
+    /// While traversing a table, do not call tostring() or tobytes() directly on a key, unless
+    /// you know that the key is actually a string. Recall that tostring() changes the value at
+    /// the given index; this confuses the next call to next().
+    pub fn next(&mut self, index: i32) -> bool {
+        #[inline];
+        self.check_valid(index, true);
+        unsafe { self.next_unchecked(index) }
+    }
+
+    /// Unchecked variant of next()
+    pub unsafe fn next_unchecked(&mut self, index: i32) -> bool {
+        #[inline];
+        raw::lua_next(self.L, index as c_int) != 0
+    }
 
     /// Concatenates the `n` values at the top of the stack, pops them, and
     /// leaves the result at the top.
