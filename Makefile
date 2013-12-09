@@ -1,6 +1,6 @@
 include common.mk
 
-.PHONY: test all clean
+.PHONY: test all clean examples
 
 all: $(LIBNAME)
 
@@ -13,3 +13,7 @@ test: $(wildcard *.rs)
 
 clean:
 	rm -f lua $(LIBNAME)
+	$(MAKE) -C examples clean
+
+examples:
+	$(MAKE) -C examples
