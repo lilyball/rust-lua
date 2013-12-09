@@ -272,7 +272,7 @@ impl Drop for State {
 }
 
 impl State {
-    /* State creation */
+    /* State manipulation */
 
     /// Returns a new State, or fails if memory cannot be allocated for the state
     pub fn new() -> State {
@@ -320,6 +320,29 @@ impl State {
     /// Provides unsafe access to the underlying *lua_State
     pub unsafe fn get_lua_State(&mut self) -> *mut raw::lua_State {
         self.L
+    }
+
+    /// Creates a new thread, pushes it on the stack, and returns a `State` that represents this
+    /// new thread. The new state returned by this function shares with the original state all
+    /// global objects (such as tables), but has an independent execution stack.
+    ///
+    /// This new state does not get explicitly closed. Threads are subject to garbage collection,
+    /// like any Lua object.
+    pub fn newthread(&mut self) -> State {
+        #[inline];
+        unsafe { State::from_lua_State(raw::lua_newthread(self.L)) }
+    }
+
+    /// Sets a new panic function and returns the old one.
+    ///
+    /// The panic function can access the error message at the top of the stack.
+    ///
+    /// The default panic function installed by this library calls fail!() with the error message.
+    /// Your panic function should either call through to the default one, or should fail!()
+    /// itself. Otherwise, the application will be terminated.
+    pub unsafe fn atpanic(&mut self, panicf: CFunction) -> CFunction {
+        #[inline];
+        raw::lua_atpanic(self.L, panicf)
     }
 
     /* Utility functions */
