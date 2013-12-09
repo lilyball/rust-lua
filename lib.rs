@@ -107,6 +107,7 @@ pub mod Type {
         /// Returns the name of the type
         pub fn name(&self) -> &'static str {
             unsafe {
+                // NB: lua_typename() doesn't actually use its state parameter
                 let s = raw::lua_typename(ptr::mut_null(), *self as libc::c_int);
                 str::raw::c_str_to_static_slice(s)
             }
@@ -244,8 +245,8 @@ impl ToStr for PCallError {
 #[unsafe_no_drop_flag]
 pub struct State {
     priv L: *mut raw::lua_State,
-    priv owned: bool,
-    priv stackspace: i32
+    priv stackspace: i32,
+    priv owned: bool
 }
 
 impl Drop for State {
@@ -274,7 +275,7 @@ impl State {
             let L = raw::lua_newstate(alloc, ptr::mut_null());
             if (L.is_not_null()) {
                 raw::lua_atpanic(L, panic);
-                Some(State::from_lua_State(L, true))
+                Some(State{ L: L, stackspace: MINSTACK, owned: true })
             } else {
                 None
             }
@@ -293,17 +294,16 @@ impl State {
         }
         extern "C" fn panic(L: *mut raw::lua_State) -> c_int {
             unsafe {
-                let s = State::from_lua_State(L, false).describe_unchecked_stack(-1, false);
+                let s = State::from_lua_State(L).describe_unchecked_stack(-1, false);
                 fail!("unprotected error in call to Lua API ({})", s.unwrap_or_default());
             }
         }
     }
 
     /// Wraps a *raw::lua_State in a State
-    /// If `owned` is true, the *lua_State will be closed when the State is dropped.
-    pub unsafe fn from_lua_State(L: *mut raw::lua_State, owned: bool) -> State {
+    pub unsafe fn from_lua_State(L: *mut raw::lua_State) -> State {
         #[inline];
-        State{ L: L, owned: owned, stackspace: MINSTACK }
+        State{ L: L, stackspace: MINSTACK, owned: false}
     }
 
     /// Provides unsafe access to the underlying *lua_State
@@ -820,7 +820,7 @@ impl State {
         if s.is_null() {
             None
         } else {
-            Some(State::from_lua_State(s, false))
+            Some(State::from_lua_State(s))
         }
     }
 
