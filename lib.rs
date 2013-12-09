@@ -29,7 +29,7 @@ pub static VERSION_NUM: int = 501;
 pub static MULTRET: i32 = raw::MULTRET as i32;
 
 /// Minimum Lua stack available to a C function
-pub static MINSTACK: i32 = 20;
+pub static MINSTACK: i32 = config::LUA_MINSTACK as i32;
 
 /// Pseudo-index for the registry
 pub static REGISTRYINDEX: i32 = raw::LUA_REGISTRYINDEX as i32;
@@ -1864,17 +1864,109 @@ impl State {
     }
 }
 
+pub static NoRef: i32 = aux::raw::LUA_NOREF as i32;
+pub static RefNil: i32 = aux::raw::LUA_REFNIL as i32;
+
 // Functions from auxlib
 impl State {
-    // register
-    // getmetafield
-    // callmeta
-    // typerror
-    // argerror
+    /// Opens a library.
+    ///
+    /// When called with `libname` equal to None, it simply registers all functions in the list `l`
+    /// into the table on the top of the stack.
+    ///
+    /// When called with a `libname` of Some(_), registerlib() creates a new table `t`, sets it as
+    /// the value of the global variable `libname`, sets it as the value of
+    /// `package.loaded[libname]`, and registers on it all functions in the list `l`. If there is
+    /// a table in `package.loaded[libname]` or in variable `libname`, reuses this table instead
+    /// of creating a new one.
+    ///
+    /// In any case the function leaves the table on the top of the stack.
+    pub fn registerlib(&mut self, libname: Option<&str>, l: &[(&str,CFunction)]) {
+        #[inline];
+        // internally, luaL_registerlib seems to use 4 stack slots
+        self.checkstack_(4);
+        if libname.is_none() {
+            luaassert!(self, self.gettop() >= 1, "registerlib: stack underflow");
+        }
+        unsafe { self.registerlib_unchecked(libname, l) }
+    }
+
+    /// Unchecked variant of registerlib()
+    pub unsafe fn registerlib_unchecked(&mut self, libname: Option<&str>, l: &[(&str,CFunction)]) {
+        let mut cstrs = vec::with_capacity(l.len());
+        let mut l_ = vec::with_capacity(l.len()+1);
+        for &(name, func) in l.iter() {
+            let cstr = name.to_c_str();
+            cstr.with_ref(|name| l_.push(aux::raw::luaL_Reg{ name: name, func: Some(func) }));
+            cstrs.push(cstr);
+        }
+        l_.push(aux::raw::luaL_Reg{ name: ptr::null(), func: None });
+        let libcstr = libname.map(|s| s.to_c_str());
+        let libname_ = libcstr.map_default(ptr::null(), |cstr| cstr.with_ref(|p| p));
+        l_.as_imm_buf(|regs,_| aux::raw::luaL_register(self.L, libname_, regs))
+    }
+
+    /// Pushes onto the stack the field `e` from the metatable of the object at index `obj`. If
+    /// the object does not have a metatable, or if the metatable does not have this field,
+    /// returns `false` and pushes nothing.
+    pub fn getmetafield(&mut self, obj: i32, e: &str) -> bool {
+        #[inline];
+        self.check_acceptable(obj);
+        self.checkstack_(2); // internally, luaL_getmetafield uses 2 stack slots
+        unsafe { self.getmetafield_unchecked(obj, e) }
+    }
+
+    /// Unchecked variant of getmetafield()
+    pub unsafe fn getmetafield_unchecked(&mut self, obj: i32, e: &str) -> bool {
+        #[inline];
+        e.with_c_str(|e| aux::raw::luaL_getmetafield(self.L, obj as c_int, e)) != 0
+    }
+
+    /// Calls a metamethod.
+    ///
+    /// If the object at index `obj` has a metatable and this metatable has a field `e`, this
+    /// method calls this field and passes the object as its only argument. In this case this
+    /// method returns `true` and pushes onto the stack the value returned by the call. If there
+    /// is no metatable or no metamethod, this method returns `false` (without pushing any value
+    /// on the stack).
+    pub fn callmeta(&mut self, obj: i32, e: &str) -> bool {
+        #[inline];
+        self.check_acceptable(obj);
+        self.checkstack_(2); // internally, luaL_callmeta uses 2 stack slots
+        unsafe { self.callmeta_unchecked(obj, e) }
+    }
+
+    /// Unchecked variant of callmeta()
+    pub unsafe fn callmeta_unchecked(&mut self, obj: i32, e: &str) -> bool {
+        #[inline];
+        e.with_c_str(|e| aux::raw::luaL_callmeta(self.L, obj as c_int, e)) != 0
+    }
+
+    /// Generates an error with a message like the following:
+    ///
+    ///   <location>: bad argument <narg> to '<func>' (<tname> expected, got <rt>)
+    ///
+    /// where `location` is produced by where(), `func` is the name of the current function, and
+    /// `rt` is the type name of the actual argument.
+    pub fn typerror(&mut self, narg: i32, tname: &str) -> ! {
+        #[inline];
+        self.check_acceptable(narg);
+        // NB: stack checking is not necessary
+        unsafe { self.typerror_unchecked(narg, tname) }
+    }
+
+    /// Unchecked variant of typerror()
+    pub unsafe fn typerror_unchecked(&mut self, narg: i32, tname: &str) -> ! {
+        #[inline];
+        tname.with_c_str(|tname| aux::raw::luaL_typerror(self.L, narg as c_int, tname));
+        unreachable!()
+    }
+
     /// Raises an error with the following message, where `func` is taken from the call stack:
     ///
     ///   bad argument #<narg> to <func> (<extramsg>)
     pub fn argerror(&mut self, narg: i32, extramsg: &str) -> ! {
+        #[inline];
         extramsg.with_c_str(|msg| {
             unsafe { aux::raw::luaL_argerror(self.L, narg as c_int, msg); }
             unreachable!()
@@ -1917,7 +2009,39 @@ impl State {
         })
     }
 
-    // optlstring
+    /// If the function argument `narg` is a string, returns this string. If this argument is
+    /// absent or is nil, returns `d`. Otherwise, raises an error.
+    ///
+    /// If the argument is a string, but is not utf-8, returns None.
+    pub fn optstring<'a>(&'a mut self, narg: i32, d: &'static str) -> Option<&'a str> {
+        #[inline];
+        self.check_acceptable(narg);
+        unsafe { self.optstring_unchecked(narg, d) }
+    }
+
+    /// Unchecked variant of optstring()
+    pub unsafe fn optstring_unchecked<'a>(&'a mut self, narg: i32, d: &'static str)
+                                         -> Option<&'a str> {
+        #[inline];
+        str::from_utf8_opt(self.optbytes_unchecked(narg, d.as_bytes()))
+    }
+
+    /// If the function argument `narg` is a lua string, returns this string asa byte vector.
+    /// See optstring() for more information.
+    pub fn optbytes<'a>(&'a mut self, narg: i32, d: &'static [u8]) -> &'a [u8] {
+        #[inline];
+        self.check_acceptable(narg);
+        unsafe { self.optbytes_unchecked(narg, d) }
+    }
+
+    /// Unchecked variant of optbytes()
+    pub unsafe fn optbytes_unchecked<'a>(&'a mut self, narg: i32, d: &'static [u8]) -> &'a [u8] {
+        let mut sz: libc::size_t = 0;
+        let s = d.with_c_str(|d| aux::raw::luaL_optlstring(self.L, narg, d, &mut sz));
+        vec::raw::buf_as_slice(s as *u8, sz as uint, |b| {
+            cast::transmute::<&[u8], &'a [u8]>(b)
+        })
+    }
 
     /// Checks whether the function argument `narg` is a number and returns the number.
     pub fn checknumber(&mut self, narg: i32) -> f64 {
@@ -1932,7 +2056,19 @@ impl State {
         aux::raw::luaL_checknumber(self.L, narg as c_int) as f64
     }
 
-    // optnumber
+    /// If the function argument `narg` is a number, returns this number. If the argument is
+    /// absent or is nil, returns `d`. Otherwise, raises an error.
+    pub fn optnumber(&mut self, narg: i32, d: f64) -> f64 {
+        #[inline];
+        self.check_acceptable(narg);
+        unsafe { self.optnumber_unchecked(narg, d) }
+    }
+
+    /// Unchecked variant of optnumber()
+    pub unsafe fn optnumber_unchecked(&mut self, narg: i32, d: f64) -> f64 {
+        #[inline];
+        aux::raw::luaL_optnumber(self.L, narg as c_int, d as raw::lua_Number) as f64
+    }
 
     /// Checks whether the function argument `narg` is a number and returns it as an int.
     pub fn checkinteger(&mut self, narg: i32) -> int {
@@ -1947,8 +2083,33 @@ impl State {
         aux::raw::luaL_checkinteger(self.L, narg as c_int) as int
     }
 
-    // optinteger
-    // checktype
+    /// If the function argument `narg` is a number, returns this number cast to an int. If this
+    /// argument is absent or nil, returns `d`. Otherwise, raises an error.
+    pub fn optinteger(&mut self, narg: i32, d: int) -> int {
+        #[inline];
+        self.check_acceptable(narg);
+        unsafe { self.optinteger_unchecked(narg, d) }
+    }
+
+    /// Unchecked variant of optinteger()
+    pub unsafe fn optinteger_unchecked(&mut self, narg: i32, d: int) -> int {
+        #[inline];
+        aux::raw::luaL_optinteger(self.L, narg as c_int, d as raw::lua_Integer) as int
+    }
+
+    /// Checks whether the function argument `narg` has type `t`.
+    pub fn checktype(&mut self, narg: i32, t: Type) {
+        #[inline];
+        self.check_acceptable(narg);
+        unsafe { self.checktype_unchecked(narg, t) }
+    }
+
+    /// Unchecked variant of checktype()
+    pub unsafe fn checktype_unchecked(&mut self, narg: i32, t: Type) {
+        #[inline];
+        aux::raw::luaL_checktype(self.L, narg as c_int, t as c_int)
+    }
+
     /// Checks whether the function has an argument of any type (including nil) at position `narg`.
     pub fn checkany(&mut self, narg: i32) {
         #[inline];
@@ -1962,8 +2123,37 @@ impl State {
         aux::raw::luaL_checkany(self.L, narg as c_int)
     }
 
-    // newmetadata
-    // checkudata
+    /// If the registry already has the key `tname`, returns `false`. Otherwise, creates a new
+    /// table to be used as a metatable for userdata, adds it to the registry with key `tname`,
+    /// and returns `true`.
+    ///
+    /// In both cases pushes onto the stack the final value associated with `tname` in the registry.
+    pub fn newmetatable(&mut self, tname: &str) -> bool {
+        #[inline];
+        self.checkstack_(2); // uses 1 or 2 stack slots internally
+        unsafe { self.newmetatable_unchecked(tname) }
+    }
+
+    /// Unchecked variant of newmetatable()
+    pub unsafe fn newmetatable_unchecked(&mut self, tname: &str) -> bool {
+        #[inline];
+        tname.with_c_str(|tname| aux::raw::luaL_newmetatable(self.L, tname)) != 0
+    }
+
+    /// Checks whether the function argument `narg` is a userdata of the type `tname` (see
+    /// newmetatable()). The userdata pointer is returned.
+    pub fn checkudata(&mut self, narg: i32, tname: &str) -> *mut libc::c_void {
+        #[inline];
+        self.check_acceptable(narg);
+        self.checkstack_(2); // uses 2 stack slots internally
+        unsafe { self.checkudata_unchecked(narg, tname) }
+    }
+
+    /// Unchecked variant of checkudata()
+    pub unsafe fn checkudata_unchecked(&mut self, narg: i32, tname: &str) -> *mut libc::c_void {
+        #[inline];
+        tname.with_c_str(|tname| aux::raw::luaL_checkudata(self.L, narg as c_int, tname))
+    }
 
     /// Pushes onto the stack a string identifying the current position of the
     /// control at level `lvl` in the call stack.
@@ -2028,8 +2218,46 @@ impl State {
         lst[i].second_ref()
     }
 
-    // ref
-    // unref
+    /// Creates and returns a reference, in the table at index `t`, for the object at the top of
+    /// the stack (and pops the object).
+    ///
+    /// A reference is a unique integer key. As long as you do not manually add integer keys into
+    /// table `t`, ref_() ensures the uniqueness of the key it returns. You can retrieve an object
+    /// referred by reference `r` by calling `L.rawget(t, r)`. Method unref() frees a reference
+    /// and its associated object.
+    ///
+    /// If the object at the top of the stack is nil, ref_() returns the constant RefNil. The
+    /// constant NoRef is guaranteed to be different from any reference returned by ref_().
+    pub fn ref_(&mut self, t: i32) -> i32 {
+        #[inline];
+        self.check_valid(t, true);
+        self.checkstack_(1); // luaL_ref internally uses 1 stack slot
+        unsafe { self.ref_unchecked(t) }
+    }
+
+    /// Unchecked variant of ref()
+    pub unsafe fn ref_unchecked(&mut self, t: i32) -> i32 {
+        #[inline];
+        aux::raw::luaL_ref(self.L, t as c_int) as i32
+    }
+
+    /// Releases reference `r` from the table at index `t` (see ref_()). The entry is removed
+    /// from the table, so that the referred object can be collected. The reference `r` is
+    /// also freed to be used again.
+    ///
+    /// If ref is NoRef or RefNil, unref() does nothing.
+    pub fn unref(&mut self, t: i32, r: i32) {
+        #[inline];
+        self.check_acceptable(t);
+        self.checkstack_(1); // luaL_unref internally uses 1 stack slot
+        unsafe { self.unref_unchecked(t, r) }
+    }
+
+    /// Unchecked variant of unref()
+    pub unsafe fn unref_unchecked(&mut self, t: i32, r: i32) {
+        #[inline];
+        aux::raw::luaL_unref(self.L, t as c_int, r as c_int)
+    }
 
     /// Loads a file as a Lua chunk (but does not run it).
     /// If the `filename` is None, this loads from standard input.
@@ -2095,7 +2323,29 @@ impl State {
             _ => self.errorstr("loadstring: unexpected error from luaL_loadstring")
         }
     }
-    // gsub
+
+    /// Creates a copy of string `s` by replacing any occurrence of the string `p` with the string
+    /// `r`. Pushes the resulting string on the stack and returns it.
+    pub fn gsub<'a>(&'a mut self, s: &str, p: &str, r: &str) -> &'a str {
+        #[inline];
+        // gsub uses Buffer internally, which uses up to MINSTACK/2 stack slots
+        self.checkstack_(MINSTACK/2);
+        unsafe { self.gsub_unchecked(s, p, r) }
+    }
+
+    /// Unchecked variant of gsub()
+    pub unsafe fn gsub_unchecked<'a>(&'a mut self, s: &str, p: &str, r: &str) -> &'a str {
+        let s_ = s.to_c_str();
+        let p_ = p.to_c_str();
+        let r_ = r.to_c_str();
+        let sp = s_.with_ref(|p| p);
+        let pp = p_.with_ref(|p| p);
+        let rp = r_.with_ref(|p| p);
+        let res = aux::raw::luaL_gsub(self.L, sp, pp, rp);
+        let cstr = CString::new(res, false);
+        let res = cstr.as_str().unwrap();
+        cast::transmute::<&str,&'a str>(res)
+    }
 
     /* Some useful functions (macros in C) */
 
@@ -2110,11 +2360,43 @@ impl State {
             unsafe { aux::raw::luaL_argcheck(self.L, cond, narg as c_int, msg) }
         })
     }
-    // typename
-    // dofile
-    // dostring
-    // getmetatable
-    // opt
+
+    /// Loads and runs the given file. It returns `true` if there are no errors or `false` in
+    /// case of errors.
+    pub fn dofile(&mut self, filename: Option<&path::Path>) -> bool {
+        #[inline];
+        self.checkstack_(1);
+        unsafe { self.dofile_unchecked(filename) }
+    }
+
+    /// Unchecked variant of dofile()
+    pub unsafe fn dofile_unchecked(&mut self, filename: Option<&path::Path>) -> bool {
+        #[inline];
+        let cstr = filename.map(|p| p.to_c_str());
+        let name = cstr.map_default(ptr::null(), |c| c.with_ref(|p| p));
+        aux::raw::luaL_dofile(self.L, name) == 0
+    }
+
+    /// Loads and runs the given string. It returns `true` if there are no errors or `false` in
+    /// case of errors.
+    pub fn dostring(&mut self, s: &str) -> bool {
+        #[inline];
+        self.checkstack_(1);
+        unsafe { self.dostring_unchecked(s) }
+    }
+
+    /// Unchecked variant of dostring()
+    pub unsafe fn dostring_unchecked(&mut self, s: &str) -> bool {
+        #[inline];
+        s.with_c_str(|s| aux::raw::luaL_dostring(self.L, s)) == 0
+    }
+
+    /// Pushes onto the stack the metatable associated with the name `tname` in the registry
+    /// (see newmetatable()).
+    pub fn getmetatable_reg(&mut self, tname: &str) {
+        #[inline];
+        self.getfield(REGISTRYINDEX, tname)
+    }
 
     /* Generic Buffer manipulation */
 

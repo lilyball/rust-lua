@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <luaconf.h>
+#include <lua.h>
 
 #define STRINGIFY(s) #s
 #define STR(s) STRINGIFY(s)
@@ -20,7 +21,11 @@ int main() {
 	printf("pub static LUAL_BUFFERSIZE: libc::size_t = %d;\n\n", LUAL_BUFFERSIZE);
 
 	printf("/// The maximum size for the description of the source of a function in debug information.\n");
-	printf("pub static LUA_IDSIZE: libc::size_t = %d;\n", LUA_IDSIZE);
+	printf("pub static LUA_IDSIZE: libc::size_t = %d;\n\n", LUA_IDSIZE);
+
+	// include LUA_MINSTACK here even though it's not in luaconf.h
+	printf("/// The minimum Lua stack available to a C function.\n");
+	printf("pub static LUA_MINSTACK: libc::size_t = %d;\n", LUA_MINSTACK);
 
 	return 0;
 }

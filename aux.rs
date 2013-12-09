@@ -19,9 +19,12 @@ pub mod raw {
 
     pub static LUAL_BUFFERSIZE: libc::size_t = config::LUAL_BUFFERSIZE;
 
+    pub static LUA_NOREF: c_int = -2;
+    pub static LUA_REFNIL: c_int = -1;
+
     pub struct luaL_Reg {
         name: *libc::c_char,
-        func: lua_CFunction
+        func: Option<lua_CFunction>
     }
 
     extern {
