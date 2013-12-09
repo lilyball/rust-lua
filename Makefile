@@ -1,6 +1,10 @@
+include common.mk
+
 .PHONY: test all clean
 
-all: $(filter-out tests.rs,$(wildcard *.rs))
+all: $(LIBNAME)
+
+$(LIBNAME): $(filter-out tests.rs,$(wildcard *.rs))
 	rustc lib.rs
 
 test: $(wildcard *.rs)
@@ -8,4 +12,4 @@ test: $(wildcard *.rs)
 	env RUST_THREADS=1 ./lua $(TESTNAME)
 
 clean:
-	rm lua
+	rm -f lua $(LIBNAME)
