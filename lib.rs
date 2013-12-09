@@ -45,6 +45,8 @@ pub fn upvalueindex(n: i32) -> i32 {
     raw::lua_upvalueindex(n as c_int) as i32
 }
 
+pub mod config;
+
 #[allow(missing_doc)]
 pub mod raw;
 #[allow(missing_doc)]
@@ -1913,7 +1915,7 @@ pub struct Buffer<'a> {
 }
 
 /// Size of the internal buffer used by Buffer and returned by prepbuffer()
-pub static BUFFERSIZE: u32 = aux::raw::LUAL_BUFFERSIZE;
+pub static BUFFERSIZE: uint = aux::raw::LUAL_BUFFERSIZE as uint;
 
 impl<'a> Buffer<'a> {
     // addchar

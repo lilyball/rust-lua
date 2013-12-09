@@ -8,6 +8,7 @@ pub mod raw {
     use raw;
     use raw::{lua_State, lua_CFunction, lua_Number, lua_Integer};
     use raw::{MULTRET, LUA_REGISTRYINDEX, LUA_ERRERR};
+    use config;
 
     // don't bother defining luaL_getn and luaL_setn. They're obsolete functions
 
@@ -16,7 +17,7 @@ pub mod raw {
     // Extra error code for `luaL_load`
     pub static LUA_ERRFILE: c_int = LUA_ERRERR+1;
 
-    pub static LUAL_BUFFERSIZE: libc::c_uint = libc::BUFSIZ;
+    pub static LUAL_BUFFERSIZE: libc::size_t = config::LUAL_BUFFERSIZE;
 
     pub struct luaL_Reg {
         name: *libc::c_char,

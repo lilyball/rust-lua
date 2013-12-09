@@ -1,2 +1,3 @@
 *.rlib
 /lua
+/config.rs

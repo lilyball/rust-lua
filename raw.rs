@@ -1,13 +1,12 @@
-use std::libc;
+use config;
+use std::{libc, ptr};
 use std::libc::c_int;
-use std::ptr;
 
 /// Type of numbers in Lua.
-/// Assumes the installed liblua hasn't changed the default.
-pub type lua_Number = f64;
+pub type lua_Number = config::LUA_NUMBER;
 
 /// Type for integer functions
-pub type lua_Integer = libc::ptrdiff_t;
+pub type lua_Integer = config::LUA_INTEGER;
 
 pub static MULTRET: c_int = -1;
 
