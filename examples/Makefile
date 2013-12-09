@@ -2,7 +2,7 @@ include ../common.mk
 
 .PHONY: all clean
 
-EXAMPLES := simple sine simpleapi
+EXAMPLES := simple sine simpleapi table
 
 USES_COMMON := sine
 
