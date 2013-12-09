@@ -14,7 +14,8 @@
 
 use std::libc;
 use std::libc::c_int;
-use std::{path, ptr, str, vec};
+use std::{cast, path, ptr, str, vec};
+use std::c_str::CString;
 
 #[link(name = "lua.5.1")]
 extern {}
@@ -788,7 +789,7 @@ impl State {
             None
         } else {
             vec::raw::buf_as_slice(s as *u8, sz as uint, |b| {
-                Some(std::cast::transmute::<&[u8], &'a [u8]>(b))
+                Some(cast::transmute::<&[u8], &'a [u8]>(b))
             })
         }
     }
@@ -1912,7 +1913,7 @@ impl State {
         let mut sz: libc::size_t = 0;
         let s = aux::raw::luaL_checklstring(self.L, narg, &mut sz);
         vec::raw::buf_as_slice(s as *u8, sz as uint, |b| {
-            std::cast::transmute::<&[u8], &'a [u8]>(b)
+            cast::transmute::<&[u8], &'a [u8]>(b)
         })
     }
 
@@ -2137,4 +2138,278 @@ impl<'a> Buffer<'a> {
     // addstring
     // addvalue
     // pushresult (consume self)
+}
+
+/* Debug API */
+/// Event codes
+pub type DebugEvent = DebugEvent::DebugEvent;
+pub mod DebugEvent {
+    //! Mod for event codes
+    use raw;
+    use libc::c_int;
+    /// Event codes
+    pub enum DebugEvent {
+        /// The call hook is called when the interpreter calls a function. The hook is called
+        /// just after Lua enters the new function, before the function gets its arguments.
+        HookCall = raw::LUA_HOOKCALL,
+        /// The return hook is called when the interpreter returns from a function. The hook is
+        /// called just before Lua leaves the function. You have no access to the values to be
+        /// returned by the function.
+        HookRet = raw::LUA_HOOKRET,
+        /// The line hook is called when the interpreter is about to start the execution of a new
+        /// line of code, or when it jumps back in the code (even to the same line).
+        /// (This event only happens while Lua is executing a Lua function.)
+        HookLine = raw::LUA_HOOKLINE,
+        /// The count hook is called after the interpreter executes every `count` instructions.
+        /// (This event only happens while Lua is executing a Lua function.)
+        HookCount = raw::LUA_HOOKCOUNT,
+        /// The tailret event is used when a HookRet hook is called while simulating a return from
+        /// a function that did a tail call; in this case, it is useless to call getinfo().
+        HookTailRet = raw::LUA_HOOKTAILRET
+    }
+
+    /// Converts a c_int event code to a DebugEvent.
+    pub fn from_event(event: c_int) -> Option<DebugEvent> {
+        match event {
+            raw::LUA_HOOKCALL => Some(HookCall),
+            raw::LUA_HOOKRET => Some(HookRet),
+            raw::LUA_HOOKLINE => Some(HookLine),
+            raw::LUA_HOOKCOUNT => Some(HookCount),
+            raw::LUA_HOOKTAILRET => Some(HookTailRet),
+            _ => None
+        }
+    }
+
+    /// Event mask for HookCall
+    pub static MaskCall: i32 = raw::LUA_MASKCALL as i32;
+    /// Event mask for HookRet
+    pub static MaskRet: i32 = raw::LUA_MASKRET as i32;
+    /// Event mask for HookLine
+    pub static MaskLine: i32 = raw::LUA_MASKLINE as i32;
+    /// Event mask for HookCount
+    pub static MaskCount: i32 = raw::LUA_MASKCOUNT as i32;
+}
+
+/// Type for functions to be called by the debugger in specific events
+pub type Hook = raw::lua_Hook;
+
+/// A structure used to carry different peices of information about an active function.
+/// getstack() fills only the private part of this structure, for later use. To fill the other
+/// fields of lua_Debug with useful information, call getinfo().
+pub type Debug = raw::lua_Debug;
+
+impl raw::lua_Debug {
+    /// Returns a newly-zeroed instance of Debug
+    pub fn new() -> Debug {
+        #[inline];
+        std::default::Default::default()
+    }
+}
+
+impl State {
+    /// Gets information about the interpreter runtime stack.
+    ///
+    /// This function returns a Debug structure with an identification of the activation
+    /// record of the function executing at a given level. Level 0 is the current running
+    /// function, whereas level n+1 is the function that has called level n. When there are no
+    /// errors, getstack() returns Some(Debug); when called with a level greater than the stack
+    /// depth, it returns None.
+    pub fn getstack(&mut self, level: i32) -> Option<Debug> {
+        #[inline];
+        let mut ar: Debug = std::default::Default::default();
+        if unsafe { raw::lua_getstack(self.L, level as c_int, &mut ar) != 0 } {
+            Some(ar)
+        } else {
+            None
+        }
+    }
+
+    /// Returns information about a specific function or function invocation.
+    ///
+    /// To get information about a function invocation, the parameter `ar` must ve a valid
+    /// activation record that was returned by a previous call to getstack() or given as argument
+    /// to a hook.
+    ///
+    /// To get information about a function you push it onto the stack and start the `what` string
+    /// with the character '>'. (In that case, getinfo() pops the function in the top of the
+    /// stack.) For instance, to know in which line a function `f` was defined, you can write
+    /// the following code:
+    ///
+    ///   let ar = Debug::new();
+    ///   L.getfield(GLOBALSINDEX, "f"); // get global 'f'
+    ///   L.getinfo(">S", &mut ar);
+    ///   println!("{}", ar.linedefined);
+    ///
+    /// Each character in the string `what` selects some fields of the structure `ar` to be
+    /// filled or a value to be pushed on the stack:
+    ///
+    /// * 'n': fills in the fields `name` and `namewhat`
+    /// * 'S': fills in the fields `source`, `short_src`, `linedefined`, `lastlinedefined`, and
+    ///        `what`
+    /// * 'l': fills in the field `currentline`
+    /// * 'u': fills in the field `nups`
+    /// * 'f': pushes onto the stack the function that is running at the given level
+    /// * 'L': pushes onto the stack a table whose indices are the numbers of the lines that are
+    ///        valid on the function. (A valid line is a line with some associated code, that is,
+    ///        a line where you can put a break point. Non-valid lines include empty lines and
+    ///        comments.)
+    ///
+    /// This function returns `false` on error (for instance, an invalid option in `what`).
+    ///
+    /// Raises the `c_str::null_byte` condition if `what` has interior NULs.
+    pub fn getinfo(&mut self, what: &str, ar: &mut Debug) -> bool {
+        #[inline];
+        if what.starts_with(">") {
+            luaassert!(self, self.gettop() >= 1 && self.isfunction(-1),
+                       "getinfo: top stack value is not a function");
+        }
+        if what.find(&['f', 'L']).is_some() {
+            self.checkstack_(1);
+        }
+        unsafe { self.getinfo_unchecked(what, ar) }
+    }
+
+    /// Unchecked variant of getinfo()
+    pub unsafe fn getinfo_unchecked(&mut self, what: &str, ar: &mut Debug) -> bool {
+        #[inline];
+        what.with_c_str(|w| raw::lua_getinfo(self.L, w, ar)) != 0
+    }
+
+    /// Gets information about a local variable of a given activation record. The parameter `ar`
+    /// must be a valid activation record that was filled by a previous call to getstack() or
+    /// given as an argument to a hook. The index `n` selects which local variable to inspect
+    /// (1 is the first parameter or active local variable, and so on, until the last active
+    /// local variable). getlocal() pushes the variable's value onto the stack and returns its
+    /// name.
+    ///
+    /// Variable names starting with '(' represent internal variables (loop control variables,
+    /// temporaries, and C function locals).
+    ///
+    /// The name is returned as a &[u8] to avoid confusion with failed utf-8 decoding vs invalid
+    /// indices.
+    pub fn getlocal<'a>(&'a mut self, ar: &mut Debug, n: i32) -> Option<&'a [u8]> {
+        #[inline];
+        self.checkstack_(1);
+        unsafe { self.getlocal_unchecked(ar, n) }
+    }
+
+    /// Unchecked variant of getlocal()
+    pub unsafe fn getlocal_unchecked<'a>(&'a mut self, ar: &mut Debug, n: i32) -> Option<&'a [u8]> {
+        #[inline];
+        let res = raw::lua_getlocal(self.L, ar, n as c_int);
+        c_str_to_bytes(res)
+    }
+
+    /// Sets the value of a local variable of a given activation record. Parameters `ar` and `n`
+    /// are as in getlocal(). setlocal() assigns the value at the top of the stack to the variable
+    /// and returns its name. It also pops the value from the stack.
+    ///
+    /// Returns None (and pops nothing) when the index is greater than the number of active local
+    /// variables.
+    ///
+    /// The name is returned as a &[u8] to avoid confusion with failed utf-8 decoding vs invalid
+    /// indices.
+    pub fn setlocal<'a>(&'a mut self, ar: &mut Debug, n: i32) -> Option<&'a [u8]> {
+        #[inline];
+        luaassert!(self, self.gettop() >= 1, "setlocal: stack underflow");
+        unsafe { self.setlocal_unchecked(ar, n) }
+    }
+
+    /// Unchecked variant of setlocal()
+    pub unsafe fn setlocal_unchecked<'a>(&'a mut self, ar: &mut Debug, n: i32) -> Option<&'a [u8]> {
+        #[inline];
+        let res = raw::lua_setlocal(self.L, ar, n as c_int);
+        c_str_to_bytes(res)
+    }
+
+    /// Gets information about a closure's upvalue. (For Lua functions, upvalues are the external
+    /// local variables that the function uses, and that are consequently included in its closure.)
+    /// getupvalue() gets the index `n` of an upvalue, pushes the upvalue's value onto the stack,
+    /// and returns its name. `funcindex` points to the closure in the stack. (Upvalues have no
+    /// particular order, as they are active through the whole function. So, they are numbered in
+    /// an arbitrary order.)
+    ///
+    /// Returns None (and pushes nothing) when the index is greater than the number of upvalues.
+    /// For C functions, this function uses the empty string "" as a name for all upvalues.
+    ///
+    /// The name is returned as a &[u8] to avoid confusion with failed utf-8 decoding vs invalid
+    /// indices.
+    pub fn getupvalue<'a>(&'a mut self, funcindex: i32, n: i32) -> Option<&'a [u8]> {
+        #[inline];
+        self.check_acceptable(funcindex);
+        self.checkstack_(1);
+        unsafe { self.getupvalue_unchecked(funcindex, n) }
+    }
+
+    /// Unchecked variant of getupvalue()
+    pub unsafe fn getupvalue_unchecked<'a>(&'a mut self, funcindex: i32, n: i32)
+                                          -> Option<&'a [u8]> {
+        #[inline];
+        let res = raw::lua_getupvalue(self.L, funcindex as c_int, n as c_int);
+        c_str_to_bytes(res)
+    }
+
+    /// Sets the value of a closure's upvalue. It assigns the value at the top of the stack to the
+    /// upvalue and returns its name. It also pops the value from the stack. Parameters
+    /// `funcindex` and `n` are as in getupvalue().
+    ///
+    /// Returns None (and pops nothing) when the index is greater than the number of upvalues.
+    ///
+    /// The name is returned as a &[u8] to avoid confusion with failed utf-8 decoding vs invalid
+    /// indices.
+    pub fn setupvalue<'a>(&'a mut self, funcindex: i32, n: i32) -> Option<&'a [u8]> {
+        #[inline];
+        self.check_acceptable(funcindex);
+        self.checkstack_(1);
+        unsafe { self.setupvalue_unchecked(funcindex, n) }
+    }
+
+    /// Unchecked variant of setupvalue()
+    pub unsafe fn setupvalue_unchecked<'a>(&'a mut self, funcindex: i32, n: i32)
+                                          -> Option<&'a [u8]> {
+        #[inline];
+        let res = raw::lua_setupvalue(self.L, funcindex as c_int, n as c_int);
+        c_str_to_bytes(res)
+    }
+
+    /// Sets the debugging hook function.
+    ///
+    /// Argument `f` is the hook function. `mask` specifies on which events the hook will be called:
+    /// it is formed by a bitwise OR of the Mask* constants in DebugEvent. The `count` argument is
+    /// only meaningful when the mask includes DebugEvent::MaskCount.
+    ///
+    /// A hook is disabled by setting `mask` to zero.
+    pub fn sethook(&mut self, f: Hook, mask: i32, count: i32) {
+        #[inline];
+        unsafe { raw::lua_sethook(self.L, f, mask as c_int, count as c_int); }
+    }
+
+    /// Returns the current hook function
+    pub fn gethook(&mut self) -> Hook {
+        #[inline];
+        unsafe { raw::lua_gethook(self.L) }
+    }
+
+    /// Returns the current hook mask
+    pub fn gethookmask(&mut self) -> i32 {
+        #[inline];
+        unsafe { raw::lua_gethookmask(self.L) as i32 }
+    }
+
+    /// Returns the current hook count
+    pub fn gethookcount(&mut self) -> i32 {
+        #[inline];
+        unsafe { raw::lua_gethookcount(self.L) as i32 }
+    }
+}
+
+unsafe fn c_str_to_bytes<'a>(cstr: *libc::c_char) -> Option<&'a [u8]> {
+    #[inline];
+    if cstr.is_null() {
+        None
+    } else {
+        let cstr = CString::new(cstr, false);
+        let bytes = cstr.as_bytes();
+        Some(cast::transmute::<&[u8],&'a [u8]>(bytes))
+    }
 }

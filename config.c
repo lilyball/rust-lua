@@ -17,7 +17,10 @@ int main() {
 	printf("pub static LUA_QL: &'static str = \"" LUA_QL("{}") "\";\n\n");
 
 	printf("/// The buffer size used by the lauxlib buffer system.\n");
-	printf("pub static LUAL_BUFFERSIZE: libc::size_t = %d;\n", LUAL_BUFFERSIZE);
+	printf("pub static LUAL_BUFFERSIZE: libc::size_t = %d;\n\n", LUAL_BUFFERSIZE);
+
+	printf("/// The maximum size for the description of the source of a function in debug information.\n");
+	printf("pub static LUA_IDSIZE: libc::size_t = %d;\n", LUA_IDSIZE);
 
 	return 0;
 }

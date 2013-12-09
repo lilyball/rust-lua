@@ -1,5 +1,5 @@
 use config;
-use std::{libc, ptr};
+use std::{default, libc, ptr};
 use std::libc::c_int;
 
 /// Type of numbers in Lua.
@@ -258,6 +258,89 @@ pub unsafe fn lua_getglobal(L: *mut lua_State, s: *libc::c_char) {
 #[inline(always)]
 pub unsafe fn lua_tostring(L: *mut lua_State, i: c_int) -> *libc::c_char {
     lua_tolstring(L, i, ptr::mut_null())
+}
+
+/* Debug API */
+
+// Event codes
+pub static LUA_HOOKCALL:    c_int = 0;
+pub static LUA_HOOKRET:     c_int = 1;
+pub static LUA_HOOKLINE:    c_int = 2;
+pub static LUA_HOOKCOUNT:   c_int = 3;
+pub static LUA_HOOKTAILRET: c_int = 4;
+
+// Event masks
+pub static LUA_MASKCALL: c_int = 1 << LUA_HOOKCALL;
+pub static LUA_MASKRET: c_int = 1 << LUA_HOOKRET;
+pub static LUA_MASKLINE: c_int = 1 << LUA_HOOKLINE;
+pub static LUA_MASKCOUNT: c_int = 1 << LUA_HOOKCOUNT;
+
+pub type lua_Hook = extern "C" unsafe fn(L: *mut lua_State, ar: *mut lua_Debug);
+
+pub struct lua_Debug {
+    event: c_int,
+    /// A reasonable name for the given function. Because functions in Lua are first-class values,
+    /// they do not have a fixed name: some functions can be the value of multiple global
+    /// variables, while others can be stored only in a table field. The getinfo() function
+    /// checks how the function was called to find a suitable name. If it cannot find a name,
+    /// then `name` is set to NULL.
+    name: *libc::c_char, /* (n) */
+    /// Explains the `name` field. The value of `namewhat` can be "global", "local", "method",
+    /// "field", "upvalue", or "" according to how the function was called. (Lua uses the empty
+    /// string when no other option seems to apply.)
+    namewhat: *libc::c_char, /* (n) `global', `local', `field', `method' */
+    /// The string "Lua" if the function is a Lua function, "C" if it is a C function, "main" if
+    /// it is the main part of a chunk, and "tail" if it was a function that did a tail call.
+    /// In the latter case, Lua has no other information about the function.
+    what: *libc::c_char, /* (S) `Lua', `C', `main', `tail' */
+    /// If the function was defined in a string, then `source` is that string. If the function
+    /// was defined in a file, then `source` starts with '@' followed by the file name.
+    source: *libc::c_char, /* (S) */
+    /// The current line where the given function is executing. When no line information is
+    /// available, `currentline` is set to -1.
+    currentline: c_int, /* (l) */
+    /// The number of upvalues of the function.
+    nups: c_int, /* (u) number of upvalues */
+    /// The line number where the definition of the function starts.
+    linedefined: c_int, /* (S) */
+    /// The line number where the definition of the function ends.
+    lastlinedefined: c_int, /* (S) */
+    /// A "printable" version of `source`, to be used in error messages.
+    short_src: [libc::c_char, ..config::LUA_IDSIZE], /* (S) */
+    /* private part */
+    priv i_ci: c_int /* active function */
+}
+
+impl default::Default for lua_Debug {
+    fn default() -> lua_Debug {
+        lua_Debug{
+            event: 0,
+            name: ptr::null(),
+            namewhat: ptr::null(),
+            what: ptr::null(),
+            source: ptr::null(),
+            currentline: 0,
+            nups: 0,
+            linedefined: 0,
+            lastlinedefined: 0,
+            short_src: [0, ..config::LUA_IDSIZE],
+            i_ci: 0
+        }
+    }
+}
+
+extern {
+    pub fn lua_getstack(L: *mut lua_State, level: c_int, ar: *mut lua_Debug) -> c_int;
+    pub fn lua_getinfo(L: *mut lua_State, what: *libc::c_char, ar: *mut lua_Debug) -> c_int;
+    pub fn lua_getlocal(L: *mut lua_State, ar: *mut lua_Debug, n: c_int) -> *libc::c_char;
+    pub fn lua_setlocal(L: *mut lua_State, ar: *mut lua_Debug, n: c_int) -> *libc::c_char;
+    pub fn lua_getupvalue(L: *mut lua_State, funcindex: c_int, n: c_int) -> *libc::c_char;
+    pub fn lua_setupvalue(L: *mut lua_State, funcindex: c_int, n: c_int) -> *libc::c_char;
+
+    pub fn lua_sethook(L: *mut lua_State, func: lua_Hook, mask: c_int, count: c_int) -> c_int;
+    pub fn lua_gethook(L: *mut lua_State) -> lua_Hook;
+    pub fn lua_gethookmask(L: *mut lua_State) -> c_int;
+    pub fn lua_gethookcount(L: *mut lua_State) -> c_int;
 }
 
 #[cfg(test)]
