@@ -2400,26 +2400,128 @@ impl State {
 
     /* Generic Buffer manipulation */
 
-    // buffinit
+    /// Initializes and returns a Buffer
+    pub fn buffinit<'a>(&'a mut self) -> Buffer<'a> {
+        #[inline];
+        let mut B = aux::raw::luaL_Buffer{
+            p: ptr::mut_null(),
+            lvl: 0,
+            L: self.L,
+            buffer: [0, ..aux::raw::LUAL_BUFFERSIZE]
+        };
+        unsafe { aux::raw::luaL_buffinit(self.L, &mut B); }
+        Buffer{ B: B, L: self }
+    }
 }
 
 /// String buffer for building Lua strings piecemeal
 pub struct Buffer<'a> {
     priv B: aux::raw::luaL_Buffer,
-    priv _L: &'a State // luaL_Buffer keeps a *-ptr to the underlying state
+    /// A &mut pointer to the State that created this Buffer.
+    /// The buffer internally holds on to the *lua_Buffer that the State wraps, so to ensure safety
+    /// it also wraps the &mut State. Use this field to get mutable access to the State while
+    /// the buffer is alive.
+    L: &'a mut State
 }
 
 /// Size of the internal buffer used by Buffer and returned by prepbuffer()
 pub static BUFFERSIZE: uint = aux::raw::LUAL_BUFFERSIZE as uint;
 
 impl<'a> Buffer<'a> {
-    // addchar
-    // addsize
-    // prepbuffer
-    // addlstring
-    // addstring
-    // addvalue
-    // pushresult (consume self)
+    /// Adds the byte `c` to the buffer.
+    pub fn addbyte(&mut self, c: u8) {
+        #[inline];
+        // don't call through to luaL_addchar, because we want to insert a call to checkstack()
+        // iff we have to prep the buffer.
+        unsafe {
+            if self.B.p >= ptr::mut_offset(&mut self.B.buffer[0], aux::raw::LUAL_BUFFERSIZE as int) {
+                self.L.checkstack_(1);
+                aux::raw::luaL_prepbuffer(&mut self.B);
+            }
+            *self.B.p = c as libc::c_char;
+            self.B.p = ptr::mut_offset(self.B.p, 1);
+        }
+    }
+
+    /// Adds the char `c` as utf-8 bytes to the buffer.
+    pub fn addchar(&mut self, c: char) {
+        #[inline];
+        let mut buf = [0u8, ..4];
+        let count = c.encode_utf8(buf);
+        self.addbytes(buf.slice_to(count));
+    }
+
+    /// Adds to the buffer a string of length `n` previously copied to the buffer area
+    /// (see prepbuffer()).
+    pub fn addsize(&mut self, n: uint) {
+        #[inline];
+        unsafe { aux::raw::luaL_addsize(&mut self.B, n as libc::size_t) }
+    }
+
+    /// Returns a pointer to an array of size BUFFERSIZE where you can copy a string to be
+    /// added to the buffer. After copying the string into this space you must call addsize()
+    /// with the size of the string to actually add it to the buffer.
+    pub fn prepbuffer(&mut self) -> &mut [u8, ..aux::raw::LUAL_BUFFERSIZE] {
+        #[inline];
+        self.L.checkstack_(1);
+        unsafe { self.prepbuffer_unchecked() }
+    }
+
+    /// Unchecked variant of prepbuffer()
+    pub unsafe fn prepbuffer_unchecked(&mut self) -> &mut [u8, ..aux::raw::LUAL_BUFFERSIZE] {
+        // luaL_prepbuffer ends up returning the buffer field.
+        // Rather than unsafely trying to transmute that to the array, just return the field
+        // ourselves.
+        aux::raw::luaL_prepbuffer(&mut self.B);
+        cast::transmute::<&mut [i8, ..aux::raw::LUAL_BUFFERSIZE],
+                          &mut [u8, ..aux::raw::LUAL_BUFFERSIZE]>(&mut self.B.buffer)
+    }
+
+    /// Adds the string to the buffer.
+    pub fn addstring(&mut self, s: &str) {
+        #[inline];
+        self.addbytes(s.as_bytes())
+    }
+
+    /// Adds the byte vector to the buffer.
+    pub fn addbytes(&mut self, bytes: &[u8]) {
+        #[inline];
+        // luaL_addlstring() just iterates over the string calling addchar().
+        // We want our checkstack calls, so let's just do that here instead directly.
+        for &b in bytes.iter() {
+            self.addbyte(b);
+        }
+    }
+
+    /// Adds the value at the top of the stack to the buffer. Pops the value.
+    ///
+    /// This is the only method on string buffers that can (and must) be called with an extra
+    /// element on the stack, which is the value to be added to the buffer.
+    pub fn addvalue(&mut self) {
+        #[inline];
+        luaassert!(self.L, self.L.gettop() >= 1, "addvalue: stack underflow");
+        self.L.checkstack_(1); // luaL_addvalue() needs this if the value is too large
+        unsafe { self.addvalue_unchecked() }
+    }
+
+    /// Unchecked variant of addvalue()
+    pub unsafe fn addvalue_unchecked(&mut self) {
+        #[inline];
+        aux::raw::luaL_addvalue(&mut self.B)
+    }
+
+    /// Finishes the use of the buffer, leaving the final string on top of the stack.
+    pub fn pushresult(mut self) {
+        #[inline];
+        self.L.checkstack_(1); // possibly needed for the emptybuffer
+        unsafe { self.pushresult_unchecked() }
+    }
+
+    /// Unchecked variant of pushresult()
+    pub unsafe fn pushresult_unchecked(mut self) {
+        #[inline];
+        aux::raw::luaL_pushresult(&mut self.B)
+    }
 }
 
 /* Debug API */
