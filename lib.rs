@@ -156,6 +156,9 @@ pub type Reader = raw::lua_Reader;
 /// Function type for writing blocks when dumping Lua chunks.
 pub type Writer = raw::lua_Writer;
 
+/// Type that represents memory-allocation functions
+pub type Alloc = raw::lua_Alloc;
+
 /// State.load() errors
 pub type LoadError = LoadError::LoadError;
 pub mod LoadError {
@@ -1484,8 +1487,21 @@ impl State {
         raw::lua_concat(self.L, n as c_int)
     }
 
-    // getallocf
-    // setallocf
+    /// Returns the memory-allocation function of a given state. If `ud` is not NULL, Lua stores
+    /// in `*ud` the opaque pointer passed to lua_newstate().
+    ///
+    /// Note: State::new() always provides NULL as the opaque pointer. It also provides a default
+    /// alloc function that behaves identically to the one used by luaL_newstate().
+    pub fn getallocf(&mut self, ud: *mut *mut libc::c_void) -> Alloc {
+        #[inline];
+        unsafe { raw::lua_getallocf(self.L, ud) }
+    }
+
+    /// Changes the allocator function of a given state to `f` with user data `ud`.
+    pub unsafe fn setallocf(&mut self, f: Alloc, ud: *mut libc::c_void) {
+        #[inline];
+        raw::lua_setallocf(self.L, f, ud)
+    }
 
     /* Some useful functions (macros in C) */
 
@@ -1548,7 +1564,6 @@ impl State {
         raw::lua_pushcfunction(self.L, f)
     }
 
-    // strlen
     /// Returns `true` if the value at the given acceptable index is a function
     /// (either C or Lua).
     pub fn isfunction(&mut self, index: i32) -> bool {
@@ -1577,12 +1592,84 @@ impl State {
         raw::lua_istable(self.L, index as c_int)
     }
 
-    // islightuserdata
-    // isnil
-    // isboolean
-    // isthread
-    // isnone
-    // isnoneornil
+    /// Returns `true` if the value at the given acceptable index is a light userdata.
+    pub fn islightuserdata(&mut self, index: i32) -> bool {
+        #[inline];
+        self.check_acceptable(index);
+        unsafe { self.islightuserdata_unchecked(index) }
+    }
+
+    /// Unchecked variant of islightuserdata()
+    pub unsafe fn islightuserdata_unchecked(&mut self, index: i32) -> bool {
+        #[inline];
+        raw::lua_islightuserdata(self.L, index)
+    }
+
+    /// Returns `true` if the value at the given acceptable index is `nil`.
+    pub fn isnil(&mut self, index: i32) -> bool {
+        #[inline];
+        self.check_acceptable(index);
+        unsafe { self.isnil_unchecked(index) }
+    }
+
+    /// Unchecked variant of isnil()
+    pub unsafe fn isnil_unchecked(&mut self, index: i32) -> bool {
+        #[inline];
+        raw::lua_isnil(self.L, index)
+    }
+
+    /// Returns `true` if the value at the given acceptable index has type boolean.
+    pub fn isboolean(&mut self, index: i32) -> bool {
+        #[inline];
+        self.check_acceptable(index);
+        unsafe { self.isboolean_unchecked(index) }
+    }
+
+    /// Unchecked variant of isboolean()
+    pub unsafe fn isboolean_unchecked(&mut self, index: i32) -> bool {
+        #[inline];
+        raw::lua_isboolean(self.L, index)
+    }
+
+    /// Returns `true` if the value at the given acceptable index is a thread.
+    pub fn isthread(&mut self, index: i32) -> bool {
+        #[inline];
+        self.check_acceptable(index);
+        unsafe { self.isthread_unchecked(index) }
+    }
+
+    /// Unchecked variant of isthread()
+    pub unsafe fn isthread_unchecked(&mut self, index: i32) -> bool {
+        #[inline];
+        raw::lua_isthread(self.L, index)
+    }
+
+    /// Returns `true` if the given acceptable index is not valid.
+    pub fn isnone(&mut self, index: i32) -> bool {
+        #[inline];
+        self.check_acceptable(index);
+        unsafe { self.isnone_unchecked(index) }
+    }
+
+    /// Unchecked variant of isnone()
+    pub unsafe fn isnone_unchecked(&mut self, index: i32) -> bool {
+        #[inline];
+        raw::lua_isnone(self.L, index)
+    }
+
+    /// Returns `true` if the given acceptable index is not valid or if the value at this index
+    /// is nil.
+    pub fn isnoneornil(&mut self, index: i32) -> bool {
+        #[inline];
+        self.check_acceptable(index);
+        unsafe { self.isnoneornil_unchecked(index) }
+    }
+
+    /// Unchecked variant of isnoneornil()
+    pub unsafe fn isnoneornil_unchecked(&mut self, index: i32) -> bool {
+        #[inline];
+        raw::lua_isnoneornil(self.L, index)
+    }
 
     /// Pops a value from the stack and sets it as the new value of global `name`.
     /// Raises the `c_str::null_byte` condition if `name` has interior NULs.
@@ -1612,10 +1699,6 @@ impl State {
         #[inline];
         name.with_c_str(|s| raw::lua_getglobal(self.L, s))
     }
-
-    /* Hack */
-
-    // setlevel
 }
 
 /// Name for the coroutine lib

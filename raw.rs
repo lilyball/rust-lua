@@ -204,11 +204,6 @@ pub unsafe fn lua_pushcfunction(L: *mut lua_State, f: lua_CFunction) {
 }
 
 #[inline(always)]
-pub unsafe fn lua_strlen(L: *mut lua_State, i: c_int) -> libc::size_t {
-    lua_objlen(L, i)
-}
-
-#[inline(always)]
 pub unsafe fn lua_isfunction(L: *mut lua_State, idx: c_int) -> bool {
     lua_type(L, idx) == LUA_TFUNCTION
 }
@@ -263,11 +258,6 @@ pub unsafe fn lua_getglobal(L: *mut lua_State, s: *libc::c_char) {
 #[inline(always)]
 pub unsafe fn lua_tostring(L: *mut lua_State, i: c_int) -> *libc::c_char {
     lua_tolstring(L, i, ptr::mut_null())
-}
-
-// Hack
-extern {
-    pub fn lua_setlevel(from: *mut lua_State, to: *mut lua_State);
 }
 
 #[cfg(test)]
