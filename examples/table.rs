@@ -8,7 +8,7 @@ fn main() {
     L.open_base();
     L.pushnil(); // push the first key
     while L.next(lua::GLOBALSINDEX) {
-        println!("{} - {}", L.describe(-2).unwrap_or_default(), L.typename(-1));
+        println!("{} - {}", L.describe(-2), L.typename(-1));
         L.pop(1); // remove the value, keep the key
     }
 }

@@ -306,7 +306,7 @@ impl State {
         extern "C" fn panic(L: *mut raw::lua_State) -> c_int {
             unsafe {
                 let s = State::from_lua_State(L).describe_unchecked_stack(-1, false);
-                fail!("unprotected error in call to Lua API ({})", s.unwrap_or_default());
+                fail!("unprotected error in call to Lua API ({})", s);
             }
         }
     }
@@ -361,8 +361,8 @@ impl State {
     }
 
     /// Returns the textual description of the value at the given acceptable index.
-    /// If the given index is non-valid, returns None.
-    pub fn describe(&mut self, idx: i32) -> Option<~str> {
+    /// Returns "" if the given index is non-valid.
+    pub fn describe(&mut self, idx: i32) -> ~str {
         #[inline];
         self.check_acceptable(idx);
         self.checkstack_(1);
@@ -371,7 +371,7 @@ impl State {
 
     /// Unchecked variant of describe()
     /// May require 1 extra slot on the stack.
-    pub unsafe fn describe_unchecked(&mut self, idx: i32) -> Option<~str> {
+    pub unsafe fn describe_unchecked(&mut self, idx: i32) -> ~str {
         #[inline];
         self.describe_unchecked_stack(idx, true)
     }
@@ -381,10 +381,10 @@ impl State {
     /// Notably, it may do this to avoid converting the existing value's type.
     /// This method allows this behavior to be disabled.
     /// If usestack is on, this method may require 1 free slot on the stack.
-    pub unsafe fn describe_unchecked_stack(&mut self, idx: i32, usestack: bool) -> Option<~str> {
+    pub unsafe fn describe_unchecked_stack(&mut self, idx: i32, usestack: bool) -> ~str {
         match self.type_unchecked(idx) {
-            None => None,
-            Some(typ) => Some(match typ {
+            None => ~"",
+            Some(typ) => match typ {
                 Type::Nil => ~"nil",
                 Type::Boolean => if self.toboolean_unchecked(idx) { ~"true" } else { ~"false" },
                 Type::Number => {
@@ -406,7 +406,7 @@ impl State {
                     let p = self.topointer(idx);
                     format!("<{} {:p}>", s, p)
                 }
-            })
+            }
         }
     }
 
