@@ -211,6 +211,7 @@ pub type PCallError = PCallError::PCallError;
 pub mod PCallError {
     //! State.pcall() error mod
     use raw;
+    use libc::c_int;
     /// State.pcall() errors
     pub enum PCallError {
         /// Runtime error
@@ -220,14 +221,24 @@ pub mod PCallError {
         /// Error while running the error handler function
         ErrErr = raw::LUA_ERRERR
     }
-}
 
-impl ToStr for PCallError {
-    fn to_str(&self) -> ~str {
-        match *self {
-            PCallError::ErrRun => ~"runtime error",
-            PCallError::ErrMem => ~"memory allocation error",
-            PCallError::ErrErr => ~"error handler func error"
+    /// Converts an error code from `lua_pcall()` into a PCallError
+    pub fn from_code(code: c_int) -> Option<PCallError> {
+        match code {
+            raw::LUA_ERRRUN => Some(ErrRun),
+            raw::LUA_ERRMEM => Some(ErrMem),
+            raw::LUA_ERRERR => Some(ErrErr),
+            _ => None,
+        }
+    }
+
+    impl ToStr for PCallError {
+        fn to_str(&self) -> ~str {
+            match *self {
+                ErrRun => ~"runtime error",
+                ErrMem => ~"memory allocation error",
+                ErrErr => ~"error handler func error"
+            }
         }
     }
 }
@@ -1243,10 +1254,9 @@ impl State {
                                  -> Result<(),PCallError> {
         match raw::lua_pcall(self.L, nargs as c_int, nresults as c_int, errfunc as c_int) {
             0 => Ok(()),
-            raw::LUA_ERRRUN => Err(PCallError::ErrRun),
-            raw::LUA_ERRMEM => Err(PCallError::ErrMem),
-            raw::LUA_ERRERR => Err(PCallError::ErrErr),
-            _ => self.errorstr("pcall: unexpected error from lua_pcall")
+            i => Err(PCallError::from_code(i).unwrap_or_else(|| {
+                self.errorstr("pcall: unexpected error from lua_pcall")
+            }))
         }
     }
 
@@ -1312,9 +1322,70 @@ impl State {
 
     /* Coroutine functions */
 
-    // yield
-    // resume
-    // status
+    /// Yields a coroutine.
+    ///
+    /// This function should only be called as the return expression of a C function, as follows:
+    ///
+    ///   return L.yield_(nresults);
+    ///
+    /// When a C function calls yield_() in that way, the running coroutine suspends its execution,
+    /// and the call to resume() that started this coroutine returns. The parameter `nresults` is
+    /// the number of values from the stack that are passed as the results to resume().
+    pub fn yield_(&mut self, nresults: i32) -> c_int {
+        #[inline];
+        luaassert!(self, self.gettop() >= nresults, "yield: stack underflow");
+        unsafe { self.yield_unchecked(nresults) }
+    }
+
+    /// Unchecked variant of yield_()
+    pub unsafe fn yield_unchecked(&mut self, nresults: i32) -> c_int {
+        #[inline];
+        raw::lua_yield(self.L, nresults as c_int)
+    }
+
+    /// Starts and resumes a coroutine in a given thread.
+    ///
+    /// To start a coroutine, you first create a new thread (see thread()); then you push onto its
+    /// stack the main function plus any arguments; then you call resume(), with `narg` being the
+    /// number of arguments. This call returns when the coroutine suspends or finishes its
+    /// execution. When it returns, the stack contains all values passed to yield_(), or all values
+    /// returned by the body function. resume() returns Ok(false) if the coroutine yields,
+    /// Ok(true) if the coroutine finishes its execution without errors, or Err(PCallError) in
+    /// case of errors. In case of errors, the stack is not unwound, so you can use the debug API
+    /// over it. The error message is on top of the stack. To restart a coroutine, you put on its
+    /// stack only the values to be passed as results from yield_(), and then call resume().
+    pub fn resume(&mut self, narg: i32) -> Result<bool,PCallError> {
+        #[inline];
+        luaassert!(self, self.gettop() > narg, "resume: stack underflow");
+        unsafe { self.resume_unchecked(narg) }
+    }
+
+    /// Unchecked variant of resume()
+    pub unsafe fn resume_unchecked(&mut self, narg: i32) -> Result<bool,PCallError> {
+        #[inline];
+        match raw::lua_resume(self.L, narg as c_int) {
+            raw::LUA_YIELD => Ok(false),
+            0 => Ok(true),
+            i => Err(PCallError::from_code(i).unwrap_or_else(|| {
+                self.errorstr("resume: unexpected error from lua_resume")
+            }))
+        }
+    }
+
+    /// Returns the status of the receiving thread.
+    ///
+    /// The status can be Ok(true) for a normal thread, Ok(false) if the thread is suspended, or
+    /// Err(PCallError) if the thread finished its execution with an error.
+    pub fn status(&mut self) -> Result<bool,PCallError> {
+        #[inline];
+        match unsafe { raw::lua_status(self.L) } {
+            raw::LUA_YIELD => Ok(false),
+            0 => Ok(true),
+            i => Err(PCallError::from_code(i).unwrap_or_else(|| {
+                self.errorstr("status: unexpected error from lua_status")
+            }))
+        }
+    }
 
     /* Garbage collection functions */
 
