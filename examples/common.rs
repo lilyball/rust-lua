@@ -1,24 +1,18 @@
 //! Implements some common utilities for the examples
 
 use std::io;
+use std::io::buffered::BufferedReader;
 use lua;
 
 pub fn repl(L: &mut lua::State) {
-    let mut stdin = io::buffered::BufferedReader::new(io::stdin());
+    let mut stdin = BufferedReader::new(io::stdin());
     let stdout = &mut io::stdout() as &mut io::Writer;
     let stderr = &mut io::stderr() as &mut io::Writer;
-    loop {
+    while !stdin.eof() {
         L.settop(0); // clear the stack
         write!(stdout, "> ");
         stdout.flush();
-        let line = io::io_error::cond.trap(|err| {
-            if err.kind == io::EndOfFile {
-                write!(stdout, "\n");
-                // squelch
-            } else {
-                fail!(err)
-            }
-        }).inside(|| stdin.read_line());
+        let line = stdin.read_line();
         let mut line = if line.is_some() { line.unwrap() } else { break };
         if line.starts_with("=") {
             line = format!("return {}", line.slice_from(1));
