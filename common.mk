@@ -1,1 +1,1 @@
-LIBNAME := liblua-16d2a059c369cbe3-0.1.rlib
+LIBNAME := liblua-4c9daf02-0.1.rlib
