@@ -16,7 +16,7 @@ config.rs: gen-config
 gen-config: config.c
 	clang -o $@ $<
 
-test: $(wildcard *.rs)
+test: $(wildcard *.rs) config.rs
 	rustc --test lib.rs
 	env RUST_THREADS=1 ./lua $(TESTNAME)
 
