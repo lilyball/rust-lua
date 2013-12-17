@@ -4,8 +4,7 @@
        package_id = "lua",
        vers = "0.1")];
 
-// FIXME: fix this pkgid when issue #10922 in mozilla/rust is fixed
-#[pkgid="us.eridi/lua#0.1"];
+#[pkgid="github.com/kballard/rust-lua#lua:0.1"];
 
 #[comment = "Lua 5.1 bindings for Rust"];
 #[license = "MIT"];
