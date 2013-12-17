@@ -1,9 +1,5 @@
 //! Lua 5.1 bindings for Rust
 
-#[link(name = "lua",
-       package_id = "lua",
-       vers = "0.1")];
-
 #[pkgid="github.com/kballard/rust-lua#lua:0.1"];
 
 #[comment = "Lua 5.1 bindings for Rust"];
