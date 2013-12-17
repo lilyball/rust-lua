@@ -2,7 +2,8 @@ include common.mk
 
 .PHONY: test all clean examples lib
 
-LUA_PCNAME := $(if $(shell pkg-config --exists lua5.1 && echo yes),lua5.1,lua)
+LUA_PCNAME = $(if $(shell pkg-config --exists lua5.1 && echo yes),lua5.1,lua)
+LUA_LIBNAME = $(firstword $(patsubst -llua%,lua%,$(filter -llua%,$(shell pkg-config --libs-only-l $(LUA_PCNAME)))))
 CFLAGS += $(shell pkg-config --cflags $(LUA_PCNAME))
 
 lib: $(LIBNAME)
@@ -15,7 +16,7 @@ $(LIBNAME): $(filter-out tests.rs,$(wildcard *.rs))
 $(LIBNAME): config.rs
 
 config.rs: gen-config
-	./gen-config $(LUA_PCNAME) > $@
+	./gen-config $(LUA_LIBNAME) > $@
 
 .INTERMEDIATE: gen-config
 gen-config: config.c
