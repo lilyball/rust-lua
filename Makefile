@@ -21,12 +21,14 @@ config.rs: gen-config
 gen-config: config.c
 	clang -o $@ $(CFLAGS) $<
 
-test: $(wildcard *.rs) config.rs
-	rustc --test lib.rs
-	env RUST_THREADS=1 ./lua $(TESTNAME)
+test: test-lua
+	env RUST_THREADS=1 ./test-lua $(TESTNAME)
+
+test-lua: $(wildcard *.rs) config.rs
+	rustc -o $@ --test lib.rs
 
 clean:
-	rm -f lua $(LIBNAME) config.rs
+	rm -f test-lua $(LIBNAME) config.rs
 	$(MAKE) -C examples clean
 
 examples:
