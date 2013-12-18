@@ -1,11 +1,13 @@
 include common.mk
 
-.PHONY: test all clean examples
+.PHONY: test all clean examples lib
 
 LUA_PCNAME := $(if $(shell pkg-config --exists lua5.1 && echo yes),lua5.1,lua)
 CFLAGS += $(shell pkg-config --cflags $(LUA_PCNAME))
 
-all: $(LIBNAME)
+lib: $(LIBNAME)
+
+all: lib examples
 
 $(LIBNAME): $(filter-out tests.rs,$(wildcard *.rs))
 	rustc lib.rs
