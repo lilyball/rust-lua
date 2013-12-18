@@ -15,13 +15,12 @@ use std::libc::c_int;
 use std::{cast, path, ptr, str, vec};
 use std::c_str::CString;
 
-#[link(name = "lua.5.1")]
-extern {}
-
-/// Human-readable version string
-pub static VERSION: &'static str = "Lua 5.1";
+/// Human-readable major version string
+pub static VERSION: &'static str = config::LUA_VERSION;
+/// Human-readable release version string
+pub static RELEASE: &'static str = config::LUA_RELEASE;
 /// Machine-readable version number
-pub static VERSION_NUM: int = 501;
+pub static VERSION_NUM: int = config::LUA_VERSION_NUM as int;
 
 /// Value for lua_call that means return all results
 pub static MULTRET: i32 = raw::MULTRET as i32;

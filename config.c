@@ -5,9 +5,22 @@
 #define STRINGIFY(s) #s
 #define STR(s) STRINGIFY(s)
 
-int main() {
+int main(int argc, char **argv) {
+	const char *libname = "lua";
+	if (argc > 1) libname = argv[1];
+
 	printf("//! Module for configuration based on luaconf.h\n\n");
 	printf("use std::libc;\n\n");
+
+	printf("#[link(name = \"%s\")]\n", libname);
+	printf("extern {}\n\n");
+
+	printf("/// Human-readable major version string\n");
+	printf("pub static LUA_VERSION: &'static str = \"%s\";\n", LUA_VERSION);
+	printf("/// Human-readable release version string\n");
+	printf("pub static LUA_RELEASE: &'static str = \"%s\";\n", LUA_RELEASE);
+	printf("/// Machine-readable Lua version number\n");
+	printf("pub static LUA_VERSION_NUM: libc::c_int = %d;\n\n", LUA_VERSION_NUM);
 
 	printf("/// The integral type used by lua_pushinteger/lua_tointeger.\n");
 	printf("pub type LUA_INTEGER = libc::" STR(LUA_INTEGER) ";\n");
