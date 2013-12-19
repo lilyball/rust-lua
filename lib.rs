@@ -1,6 +1,7 @@
 //! Lua 5.1 bindings for Rust
 
 #[pkgid="github.com/kballard/rust-lua#lua:0.1"];
+#[crate_id="github.com/kballard/rust-lua#lua:0.1"];
 
 #[comment = "Lua 5.1 bindings for Rust"];
 #[license = "MIT"];
