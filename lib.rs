@@ -924,9 +924,7 @@ impl State {
     /// Unchecked variant of pushstring().
     pub unsafe fn pushstring_unchecked(&mut self, s: &str) {
         #[inline];
-        s.as_imm_buf(|buf, len| {
-            raw::lua_pushlstring(self.L, buf as *libc::c_char, len as libc::size_t)
-        })
+        raw::lua_pushlstring(self.L, s.as_ptr() as *libc::c_char, s.len() as libc::size_t)
     }
 
     /// Pushes a byte vector onto the stack as a lua string
@@ -939,9 +937,7 @@ impl State {
     /// Unchecked variant of pushbytes()
     pub unsafe fn pushbytes_unchecked(&mut self, bytes: &[u8]) {
         #[inline];
-        bytes.as_imm_buf(|buf, len| {
-            raw::lua_pushlstring(self.L, buf as *libc::c_char, len as libc::size_t)
-        })
+        raw::lua_pushlstring(self.L, bytes.as_ptr() as *libc::c_char, bytes.len() as libc::size_t)
     }
 
     /// Pushes a new C closure onto the stack.
@@ -1900,7 +1896,7 @@ impl State {
         l_.push(aux::raw::luaL_Reg{ name: ptr::null(), func: None });
         let libcstr = libname.map(|s| s.to_c_str());
         let libname_ = libcstr.map_default(ptr::null(), |cstr| cstr.with_ref(|p| p));
-        l_.as_imm_buf(|regs,_| aux::raw::luaL_register(self.L, libname_, regs))
+        aux::raw::luaL_register(self.L, libname_, l_.as_ptr())
     }
 
     /// Pushes onto the stack the field `e` from the metatable of the object at index `obj`. If
@@ -2211,7 +2207,7 @@ impl State {
             lstv.push(p);
         }
         lstv.push(ptr::null());
-        let i = lstv.as_imm_buf(|b,_| aux::raw::luaL_checkoption(self.L, narg as c_int, defp, b));
+        let i = aux::raw::luaL_checkoption(self.L, narg as c_int, defp, lstv.as_ptr());
         lst[i].second_ref()
     }
 
@@ -2291,16 +2287,14 @@ impl State {
 
     /// Unchecked variant of loadbuffer()
     pub unsafe fn loadbuffer_unchecked(&mut self, buff: &str, name: &str) -> Result<(),LoadError> {
-        buff.as_imm_buf(|bp, bsz| {
-            let bp = bp as *libc::c_char;
-            let bsz = bsz as libc::size_t;
-            match name.with_c_str(|name| aux::raw::luaL_loadbuffer(self.L, bp, bsz, name)) {
-                0 => Ok(()),
-                raw::LUA_ERRSYNTAX => Err(LoadError::ErrSyntax),
-                raw::LUA_ERRMEM => Err(LoadError::ErrMem),
-                _ => self.errorstr("loadbuffer: unexpected error from luaL_loadbuffer")
-            }
-        })
+        let bp = buff.as_ptr() as *libc::c_char;
+        let bsz = buff.len() as libc::size_t;
+        match name.with_c_str(|name| aux::raw::luaL_loadbuffer(self.L, bp, bsz, name)) {
+            0 => Ok(()),
+            raw::LUA_ERRSYNTAX => Err(LoadError::ErrSyntax),
+            raw::LUA_ERRMEM => Err(LoadError::ErrMem),
+            _ => self.errorstr("loadbuffer: unexpected error from luaL_loadbuffer")
+        }
     }
 
     /// Loads a string as a Lua chunk (but does not run it).
