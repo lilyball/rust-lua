@@ -11,7 +11,7 @@ lib: $(LIBNAME)
 all: lib examples
 
 $(LIBNAME): $(filter-out tests.rs,$(wildcard *.rs))
-	rustc lib.rs
+	rustc -O lib.rs
 
 $(LIBNAME): config.rs
 
