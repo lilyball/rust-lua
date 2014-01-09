@@ -1895,7 +1895,7 @@ impl State {
         }
         l_.push(aux::raw::luaL_Reg{ name: ptr::null(), func: None });
         let libcstr = libname.map(|s| s.to_c_str());
-        let libname_ = libcstr.map_default(ptr::null(), |cstr| cstr.with_ref(|p| p));
+        let libname_ = libcstr.map_or(ptr::null(), |cstr| cstr.with_ref(|p| p));
         aux::raw::luaL_register(self.L, libname_, l_.as_ptr())
     }
 
@@ -2197,7 +2197,7 @@ impl State {
     pub unsafe fn checkoption_unchecked<'a, T>(&mut self, narg: i32, def: Option<&str>,
                                                lst: &'a [(&str,T)]) -> &'a T {
         let def_cstr = def.map(|d| d.to_c_str());
-        let defp = def_cstr.as_ref().map_default(ptr::null(), |c| c.with_ref(|p| p));
+        let defp = def_cstr.as_ref().map_or(ptr::null(), |c| c.with_ref(|p| p));
         let mut lst_cstrs = vec::with_capacity(lst.len());
         let mut lstv = vec::with_capacity(lst.len()+1);
         for &(k,_) in lst.iter() {
@@ -2265,7 +2265,7 @@ impl State {
     pub unsafe fn loadfile_unchecked(&mut self, filename: Option<&path::Path>)
                                     -> Result<(),LoadFileError> {
         let cstr = filename.map(|p| p.to_c_str());
-        let ptr = cstr.as_ref().map_default(ptr::null(), |cstr| cstr.with_ref(|p| p));
+        let ptr = cstr.as_ref().map_or(ptr::null(), |cstr| cstr.with_ref(|p| p));
         match aux::raw::luaL_loadfile(self.L, ptr) {
             0 => Ok(()),
             raw::LUA_ERRSYNTAX => Err(LoadFileError::ErrSyntax),
@@ -2364,7 +2364,7 @@ impl State {
     pub unsafe fn dofile_unchecked(&mut self, filename: Option<&path::Path>) -> bool {
         #[inline];
         let cstr = filename.map(|p| p.to_c_str());
-        let name = cstr.map_default(ptr::null(), |c| c.with_ref(|p| p));
+        let name = cstr.map_or(ptr::null(), |c| c.with_ref(|p| p));
         aux::raw::luaL_dofile(self.L, name) == 0
     }
 
