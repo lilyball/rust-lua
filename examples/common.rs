@@ -8,7 +8,7 @@ pub fn repl(L: &mut lua::State) {
     let mut stdin = BufferedReader::new(io::stdin());
     let stdout = &mut io::stdout() as &mut io::Writer;
     let stderr = &mut io::stderr() as &mut io::Writer;
-    while !stdin.eof() {
+    loop {
         L.settop(0); // clear the stack
         write!(stdout, "> ");
         stdout.flush();
