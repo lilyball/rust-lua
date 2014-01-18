@@ -1,7 +1,7 @@
 //! Implements some common utilities for the examples
 
 use std::io;
-use std::io::buffered::BufferedReader;
+use std::io::BufferedReader;
 use lua;
 
 pub fn repl(L: &mut lua::State) {
