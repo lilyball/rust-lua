@@ -1,3 +1,4 @@
 *.rlib
 /test-lua
 /config.rs
+/doc/
