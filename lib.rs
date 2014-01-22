@@ -285,7 +285,7 @@ impl State {
     pub fn new_opt() -> Option<State> {
         return unsafe {
             let L = raw::lua_newstate(alloc, ptr::mut_null());
-            if (L.is_not_null()) {
+            if L.is_not_null() {
                 raw::lua_atpanic(L, panic);
                 Some(State{ L: L, stackspace: MINSTACK, owned: true })
             } else {
@@ -413,9 +413,9 @@ impl State {
                 Type::Boolean => if self.toboolean_unchecked(idx) { ~"true" } else { ~"false" },
                 Type::Number => {
                     // Let Lua create the string instead of us
-                    if (usestack) { self.pushvalue_unchecked(idx); } // copy the value
+                    if usestack { self.pushvalue_unchecked(idx); } // copy the value
                     let s = self.tostring_unchecked(-1).map(|s| s.to_owned());
-                    if (usestack) { self.pop(1); } // remove the copied value
+                    if usestack { self.pop(1); } // remove the copied value
                     s.unwrap_or_default() // default will be ~""
                 }
                 Type::String => {
@@ -764,7 +764,7 @@ impl State {
     /// Unchecked variant of tostring()
     pub unsafe fn tostring_unchecked<'a>(&'a mut self, idx: i32) -> Option<&'a str> {
         #[inline];
-        self.tobytes_unchecked(idx).and_then(|v| str::from_utf8_opt(v))
+        self.tobytes_unchecked(idx).and_then(|v| str::from_utf8(v))
     }
 
     /// Converts the value at the given acceptable index into a lua string, and returns it
@@ -1982,7 +1982,7 @@ impl State {
     /// Unchecked variant of checkstring()
     pub unsafe fn checkstring_unchecked<'a>(&'a mut self, narg: i32) -> Option<&'a str> {
         #[inline];
-        str::from_utf8_opt(self.checkbytes_unchecked(narg))
+        str::from_utf8(self.checkbytes_unchecked(narg))
     }
 
     /// Checks whether the function argument `narg` is a lua string, and returns it as a
@@ -2016,7 +2016,7 @@ impl State {
     pub unsafe fn optstring_unchecked<'a>(&'a mut self, narg: i32, d: &'static str)
                                          -> Option<&'a str> {
         #[inline];
-        str::from_utf8_opt(self.optbytes_unchecked(narg, d.as_bytes()))
+        str::from_utf8(self.optbytes_unchecked(narg, d.as_bytes()))
     }
 
     /// If the function argument `narg` is a lua string, returns this string asa byte vector.
