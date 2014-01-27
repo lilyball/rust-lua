@@ -297,7 +297,7 @@ impl State {
                             nsize: libc::size_t) -> *mut libc::c_void {
             unsafe {
                 if nsize == 0 {
-                    libc::free(ptr as *libc::c_void);
+                    libc::free(ptr as *mut libc::c_void);
                     ptr::mut_null()
                 } else {
                     libc::realloc(ptr, nsize)

@@ -8,7 +8,7 @@ extern "C" fn alloc_helper(_ud: *mut libc::c_void, ptr: *mut libc::c_void, _osiz
                          nsize: libc::size_t) -> *mut libc::c_void {
     unsafe {
         if nsize == 0 {
-            libc::free(ptr as *libc::c_void);
+            libc::free(ptr as *mut libc::c_void);
             ptr::mut_null()
         } else {
             libc::realloc(ptr, nsize)
