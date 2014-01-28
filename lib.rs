@@ -2502,7 +2502,7 @@ impl<'a> Buffer<'a> {
     }
 
     /// Finishes the use of the buffer, leaving the final string on top of the stack.
-    pub fn pushresult(mut self) {
+    pub fn pushresult(self) {
         #[inline];
         self.L.checkstack_(1); // possibly needed for the emptybuffer
         unsafe { self.pushresult_unchecked() }
