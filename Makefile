@@ -22,7 +22,7 @@ config.rs: gen-config
 
 .INTERMEDIATE: gen-config
 gen-config: config.c
-	clang -o $@ $(CFLAGS) $<
+	$(CC) -o $@ $(CFLAGS) $<
 
 test: test-lua
 	env RUST_THREADS=1 ./test-lua $(TESTNAME)
