@@ -32,10 +32,12 @@ test-lua: $(wildcard *.rs) config.rs
 
 clean:
 	rm -f test-lua $(LIBNAME) config.rs
+	rm -rf doc
 	$(MAKE) -C examples clean
 
 examples:
 	$(MAKE) -C examples
 
-doc: $(LIB_RS)
+doc: $(LIB_RS) config.rs
 	rustdoc lib.rs
+	@touch doc
