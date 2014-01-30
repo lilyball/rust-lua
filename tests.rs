@@ -20,10 +20,10 @@ fn test_error() {
 
 #[test]
 fn test_errorstr() {
-    let res = do task::try::<()> {
+    let res = task::try::<()>(proc() {
         let mut s = State::new();
         s.errorstr("some err");
-    };
+    });
     let err = res.unwrap_err();
     let expected = "unprotected error in call to Lua API (some err)";
     let s = err.as_ref::<~str>();
@@ -89,16 +89,16 @@ fn test_checkoption() {
     }
     assert_eq!(*s.checkoption(1, Some("three"), lst), COEThree);
 
-    let res = do task::try {
+    let res = task::try(proc() {
         let mut s = State::new();
         s.checkoption(1, None, lst);
-    };
+    });
     assert!(res.is_err(), "expected error from checkoption");
 
-    let res = do task::try {
+    let res = task::try(proc() {
         let mut s = State::new();
         s.checkoption(1, Some("four"), lst);
-    };
+    });
     assert!(res.is_err(), "expected error from checkoption");
 }
 
