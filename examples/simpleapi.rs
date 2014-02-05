@@ -19,8 +19,8 @@ fn main() {
         Ok(_) => (),
         Err(_) => {
             // If something went wrong, error message is at the top of the stack
-            writeln!(&mut io::stderr() as &mut io::Writer,
-                     "Couldn't load file: {}", L.tostring(-1).unwrap_or_default());
+            let _ = writeln!(&mut io::stderr(),
+                             "Couldn't load file: {}", L.tostring(-1).unwrap_or_default());
             os::set_exit_status(1);
             return;
         }
@@ -61,8 +61,8 @@ fn main() {
     match L.pcall(0, lua::MULTRET, 0) {
         Ok(()) => (),
         Err(_) => {
-            writeln!(&mut io::stderr() as &mut io::Writer,
-                     "Failed to run script: {}", L.tostring(-1).unwrap_or_default());
+            let _ = writeln!(&mut io::stderr(),
+                             "Failed to run script: {}", L.tostring(-1).unwrap_or_default());
             os::set_exit_status(1);
             return;
         }
