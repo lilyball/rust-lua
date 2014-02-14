@@ -149,18 +149,19 @@ pub mod raw {
 
     #[inline(always)]
     pub unsafe fn luaL_addchar(B: *mut luaL_Buffer, c: libc::c_char) {
-        if (*B).p >= ptr::mut_offset(&mut (*B).buffer[0], LUAL_BUFFERSIZE as int) {
+        let startp: *mut libc::c_char = &mut (*B).buffer[0];
+        if (*B).p >= startp.offset(LUAL_BUFFERSIZE as int) {
             luaL_prepbuffer(B);
         }
         *(*B).p = c;
-        (*B).p = ptr::mut_offset((*B).p, 1);
+        (*B).p = (*B).p.offset(1);
     }
 
     // skip luaL_putchar
 
     #[inline(always)]
     pub unsafe fn luaL_addsize(B: *mut luaL_Buffer, n: libc::size_t) {
-       (*B).p = ptr::mut_offset((*B).p, n as int);
+        (*B).p = (*B).p.offset(n as int);
     }
 
     extern {

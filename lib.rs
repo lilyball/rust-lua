@@ -2425,12 +2425,13 @@ impl<'a> Buffer<'a> {
         // don't call through to luaL_addchar, because we want to insert a call to checkstack()
         // iff we have to prep the buffer.
         unsafe {
-            if self.B.p >= ptr::mut_offset(&mut self.B.buffer[0], aux::raw::LUAL_BUFFERSIZE as int) {
+            let startp: *mut libc::c_char = &mut self.B.buffer[0];
+            if self.B.p >= startp.offset(aux::raw::LUAL_BUFFERSIZE as int) {
                 self.L.checkstack_(1);
                 aux::raw::luaL_prepbuffer(&mut self.B);
             }
             *self.B.p = c as libc::c_char;
-            self.B.p = ptr::mut_offset(self.B.p, 1);
+            self.B.p = self.B.p.offset(1);
         }
     }
 
