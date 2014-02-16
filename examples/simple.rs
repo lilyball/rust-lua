@@ -1,4 +1,4 @@
-extern mod lua;
+extern crate lua;
 
 fn main() {
     let mut L = lua::State::new();

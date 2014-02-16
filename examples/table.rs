@@ -1,7 +1,7 @@
 // Sample code that shows how to traverse a table.
 // We'll use it to traverse the global table
 
-extern mod lua;
+extern crate lua;
 
 fn main() {
     let mut L = lua::State::new();

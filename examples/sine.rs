@@ -1,4 +1,4 @@
-extern mod lua;
+extern crate lua;
 
 use std::{libc, num};
 

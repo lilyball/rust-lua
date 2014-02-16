@@ -4,7 +4,7 @@
 // The Rust program loads a Lua script file, sets some Lua variables, runs the
 // Lua script, and reads back the return value.
 
-extern mod lua;
+extern crate lua;
 
 use std::{io, os};
 use std::iter::range_inclusive;
