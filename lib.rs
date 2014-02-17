@@ -2208,7 +2208,7 @@ impl State {
         }
         lstv.push(ptr::null());
         let i = aux::raw::luaL_checkoption(self.L, narg as c_int, defp, lstv.as_ptr());
-        lst[i].second_ref()
+        lst[i].ref1()
     }
 
     /// Creates and returns a reference, in the table at index `t`, for the object at the top of
