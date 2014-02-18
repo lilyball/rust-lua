@@ -122,8 +122,10 @@ fn test_gsub() {
     // do some pretty basic gsub tests
     let mut L = State::new();
 
-    assert_eq!(L.gsub("foobar", "bar", "quux"), "fooquux");
-    assert_eq!(L.gsub("foo", "o", "ö"), "föö");
-    assert_eq!(L.gsub("test", "a", "b"), "test");
-    assert_eq!(L.gsub("a b c d e", " ", "."), "a.b.c.d.e");
+    unsafe {
+        assert_eq!(L.gsub("foobar", "bar", "quux"), "fooquux");
+        assert_eq!(L.gsub("foo", "o", "ö"), "föö");
+        assert_eq!(L.gsub("test", "a", "b"), "test");
+        assert_eq!(L.gsub("a b c d e", " ", "."), "a.b.c.d.e");
+    }
 }

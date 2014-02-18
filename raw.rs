@@ -345,7 +345,7 @@ impl default::Default for lua_Debug {
 extern {
     pub fn lua_getstack(L: *mut lua_State, level: c_int, ar: *mut lua_Debug) -> c_int;
     pub fn lua_getinfo(L: *mut lua_State, what: *libc::c_char, ar: *mut lua_Debug) -> c_int;
-    pub fn lua_getlocal(L: *mut lua_State, ar: *mut lua_Debug, n: c_int) -> *libc::c_char;
+    pub fn lua_getlocal(L: *mut lua_State, ar: *lua_Debug, n: c_int) -> *libc::c_char;
     pub fn lua_setlocal(L: *mut lua_State, ar: *mut lua_Debug, n: c_int) -> *libc::c_char;
     pub fn lua_getupvalue(L: *mut lua_State, funcindex: c_int, n: c_int) -> *libc::c_char;
     pub fn lua_setupvalue(L: *mut lua_State, funcindex: c_int, n: c_int) -> *libc::c_char;

@@ -750,19 +750,22 @@ impl State {
     /// Returns None if the value is not a number or a string.
     /// Returns None if the string value is not utf-8.
     ///
-    /// Note: if the value is a number, this method changes the value in the stack to a string.
-    /// This may confuse lua_next if this is called during table traversal.
+    /// This method is unsafe because, in an attempt to avoid destructors in
+    /// the calling function, it returns a &'static str that's not really
+    /// static. If the item is removed from the stack the string may become
+    /// invalid.
     ///
-    /// Note: This method borrows the state. Call .map(|s| s.to_owned()) on the result if you need
-    /// to continue using the state while the string is alive.
-    pub fn tostring<'a>(&'a mut self, idx: i32) -> Option<&'a str> {
+    /// Note: if the value is a number, this method changes the value in the
+    /// stack to a string.  This may confuse lua_next if this is called during
+    /// table traversal.
+    pub unsafe fn tostring(&mut self, idx: i32) -> Option<&'static str> {
         #[inline];
         self.check_acceptable(idx);
-        unsafe { self.tostring_unchecked(idx) }
+        self.tostring_unchecked(idx)
     }
 
     /// Unchecked variant of tostring()
-    pub unsafe fn tostring_unchecked<'a>(&'a mut self, idx: i32) -> Option<&'a str> {
+    pub unsafe fn tostring_unchecked(&mut self, idx: i32) -> Option<&'static str> {
         #[inline];
         self.tobytes_unchecked(idx).and_then(|v| str::from_utf8(v))
     }
@@ -771,14 +774,14 @@ impl State {
     /// as a byte vector.
     /// Returns None if the value is not a number or a string.
     /// See tostring() for caveats.
-    pub fn tobytes<'a>(&'a mut self, idx: i32) -> Option<&'a [u8]> {
+    pub unsafe fn tobytes(&mut self, idx: i32) -> Option<&'static [u8]> {
         #[inline];
         self.check_acceptable(idx);
-        unsafe { self.tobytes_unchecked(idx) }
+        self.tobytes_unchecked(idx)
     }
 
     /// Unchecked variant of tobytes()
-    pub unsafe fn tobytes_unchecked<'a>(&'a mut self, idx: i32) -> Option<&'a [u8]> {
+    pub unsafe fn tobytes_unchecked(&mut self, idx: i32) -> Option<&'static [u8]> {
         #[inline];
         let mut sz: libc::size_t = 0;
         let s = raw::lua_tolstring(self.L, idx, &mut sz);
@@ -786,7 +789,7 @@ impl State {
             None
         } else {
             vec::raw::buf_as_slice(s as *u8, sz as uint, |b| {
-                Some(cast::transmute::<&[u8], &'a [u8]>(b))
+                Some(cast::transmute::<&[u8], &'static [u8]>(b))
             })
         }
     }
@@ -1967,33 +1970,38 @@ impl State {
     ///
     /// If the string is not utf-8, returns None.
     ///
+    /// This method is unsafe because, in an attempt to avoid destructors in
+    /// the calling function, it returns a &'static str that's not really
+    /// static. If the item is removed from the stack the string may become
+    /// invalid.
+    ///
     /// Note: use .map(|s| s.to_owned()) if you need to use the state while the string is alive.
-    pub fn checkstring<'a>(&'a mut self, narg: i32) -> Option<&'a str> {
+    pub unsafe fn checkstring(&mut self, narg: i32) -> Option<&'static str> {
         #[inline];
         self.check_acceptable(narg);
-        unsafe { self.checkstring_unchecked(narg) }
+        self.checkstring_unchecked(narg)
     }
 
     /// Unchecked variant of checkstring()
-    pub unsafe fn checkstring_unchecked<'a>(&'a mut self, narg: i32) -> Option<&'a str> {
+    pub unsafe fn checkstring_unchecked(&mut self, narg: i32) -> Option<&'static str> {
         #[inline];
         str::from_utf8(self.checkbytes_unchecked(narg))
     }
 
     /// Checks whether the function argument `narg` is a lua string, and returns it as a
     /// byte vector. See checkstring() for caveats.
-    pub fn checkbytes<'a>(&'a mut self, narg: i32) -> &'a [u8] {
+    pub unsafe fn checkbytes(&mut self, narg: i32) -> &'static [u8] {
         #[inline];
         self.check_acceptable(narg);
-        unsafe { self.checkbytes_unchecked(narg) }
+        self.checkbytes_unchecked(narg)
     }
 
     /// Unchecked variant of checkbytes()
-    pub unsafe fn checkbytes_unchecked<'a>(&'a mut self, narg: i32) -> &'a [u8] {
+    pub unsafe fn checkbytes_unchecked(&mut self, narg: i32) -> &'static [u8] {
         let mut sz: libc::size_t = 0;
         let s = aux::raw::luaL_checklstring(self.L, narg, &mut sz);
         vec::raw::buf_as_slice(s as *u8, sz as uint, |b| {
-            cast::transmute::<&[u8], &'a [u8]>(b)
+            cast::transmute::<&[u8], &'static [u8]>(b)
         })
     }
 
@@ -2001,33 +2009,38 @@ impl State {
     /// absent or is nil, returns `d`. Otherwise, raises an error.
     ///
     /// If the argument is a string, but is not utf-8, returns None.
-    pub fn optstring<'a>(&'a mut self, narg: i32, d: &'static str) -> Option<&'a str> {
+    ///
+    /// This method is unsafe because, in an attempt to avoid destructors in
+    /// the calling function, it returns a &'static str that's not really
+    /// static. If the item is removed from the stack the string may become
+    /// invalid.
+    pub unsafe fn optstring(&mut self, narg: i32, d: &'static str) -> Option<&'static str> {
         #[inline];
         self.check_acceptable(narg);
-        unsafe { self.optstring_unchecked(narg, d) }
+        self.optstring_unchecked(narg, d)
     }
 
     /// Unchecked variant of optstring()
-    pub unsafe fn optstring_unchecked<'a>(&'a mut self, narg: i32, d: &'static str)
-                                         -> Option<&'a str> {
+    pub unsafe fn optstring_unchecked(&mut self, narg: i32, d: &'static str)
+                                         -> Option<&'static str> {
         #[inline];
         str::from_utf8(self.optbytes_unchecked(narg, d.as_bytes()))
     }
 
     /// If the function argument `narg` is a lua string, returns this string asa byte vector.
     /// See optstring() for more information.
-    pub fn optbytes<'a>(&'a mut self, narg: i32, d: &'static [u8]) -> &'a [u8] {
+    pub unsafe fn optbytes(&mut self, narg: i32, d: &'static [u8]) -> &'static [u8] {
         #[inline];
         self.check_acceptable(narg);
-        unsafe { self.optbytes_unchecked(narg, d) }
+        self.optbytes_unchecked(narg, d)
     }
 
     /// Unchecked variant of optbytes()
-    pub unsafe fn optbytes_unchecked<'a>(&'a mut self, narg: i32, d: &'static [u8]) -> &'a [u8] {
+    pub unsafe fn optbytes_unchecked(&mut self, narg: i32, d: &'static [u8]) -> &'static [u8] {
         let mut sz: libc::size_t = 0;
         let s = d.with_c_str(|d| aux::raw::luaL_optlstring(self.L, narg, d, &mut sz));
         vec::raw::buf_as_slice(s as *u8, sz as uint, |b| {
-            cast::transmute::<&[u8], &'a [u8]>(b)
+            cast::transmute::<&[u8], &'static [u8]>(b)
         })
     }
 
@@ -2312,15 +2325,20 @@ impl State {
 
     /// Creates a copy of string `s` by replacing any occurrence of the string `p` with the string
     /// `r`. Pushes the resulting string on the stack and returns it.
-    pub fn gsub<'a>(&'a mut self, s: &str, p: &str, r: &str) -> &'a str {
+    ///
+    /// This method is unsafe because, in an attempt to avoid destructors in
+    /// the calling function, it returns a &'static str that's not really
+    /// static. If the item is removed from the stack the string may become
+    /// invalid.
+    pub unsafe fn gsub(&mut self, s: &str, p: &str, r: &str) -> &'static str {
         #[inline];
         // gsub uses Buffer internally, which uses up to MINSTACK/2 stack slots
         self.checkstack_(MINSTACK/2);
-        unsafe { self.gsub_unchecked(s, p, r) }
+        self.gsub_unchecked(s, p, r)
     }
 
     /// Unchecked variant of gsub()
-    pub unsafe fn gsub_unchecked<'a>(&'a mut self, s: &str, p: &str, r: &str) -> &'a str {
+    pub unsafe fn gsub_unchecked(&mut self, s: &str, p: &str, r: &str) -> &'static str {
         let s_ = s.to_c_str();
         let p_ = p.to_c_str();
         let r_ = r.to_c_str();
@@ -2330,7 +2348,7 @@ impl State {
         let res = aux::raw::luaL_gsub(self.L, sp, pp, rp);
         let cstr = CString::new(res, false);
         let res = cstr.as_str().unwrap();
-        cast::transmute::<&str,&'a str>(res)
+        cast::transmute::<&str,&'static str>(res)
     }
 
     /* Some useful functions (macros in C) */
@@ -2658,14 +2676,14 @@ impl State {
     ///
     /// The name is returned as a &[u8] to avoid confusion with failed utf-8 decoding vs invalid
     /// indices.
-    pub fn getlocal<'a>(&'a mut self, ar: &mut Debug, n: i32) -> Option<&'a [u8]> {
+    pub fn getlocal<'a>(&mut self, ar: &'a Debug, n: i32) -> Option<&'a [u8]> {
         #[inline];
         self.checkstack_(1);
         unsafe { self.getlocal_unchecked(ar, n) }
     }
 
     /// Unchecked variant of getlocal()
-    pub unsafe fn getlocal_unchecked<'a>(&'a mut self, ar: &mut Debug, n: i32) -> Option<&'a [u8]> {
+    pub unsafe fn getlocal_unchecked<'a>(&mut self, ar: &'a Debug, n: i32) -> Option<&'a [u8]> {
         #[inline];
         let res = raw::lua_getlocal(self.L, ar, n as c_int);
         c_str_to_bytes(res)
@@ -2680,14 +2698,14 @@ impl State {
     ///
     /// The name is returned as a &[u8] to avoid confusion with failed utf-8 decoding vs invalid
     /// indices.
-    pub fn setlocal<'a>(&'a mut self, ar: &mut Debug, n: i32) -> Option<&'a [u8]> {
+    pub fn setlocal<'a>(&mut self, ar: &'a mut Debug, n: i32) -> Option<&'a [u8]> {
         #[inline];
         luaassert!(self, self.gettop() >= 1, "setlocal: stack underflow");
         unsafe { self.setlocal_unchecked(ar, n) }
     }
 
     /// Unchecked variant of setlocal()
-    pub unsafe fn setlocal_unchecked<'a>(&'a mut self, ar: &mut Debug, n: i32) -> Option<&'a [u8]> {
+    pub unsafe fn setlocal_unchecked<'a>(&mut self, ar: &'a mut Debug, n: i32) -> Option<&'a [u8]> {
         #[inline];
         let res = raw::lua_setlocal(self.L, ar, n as c_int);
         c_str_to_bytes(res)

@@ -26,7 +26,7 @@ pub fn repl(L: &mut lua::State) {
         match L.pcall(0, lua::MULTRET, 0) {
             Ok(_) => (),
             Err(_) => {
-                match L.tostring(-1) {
+                match unsafe { L.tostring(-1) } {
                     Some(msg) => { let _ = writeln!(stderr, "{}", msg); }
                     None => { let _ = writeln!(stderr, "(error object is not a string)"); }
                 }
@@ -39,8 +39,7 @@ pub fn repl(L: &mut lua::State) {
             match L.pcall(nargs, 0, 0) {
                 Ok(_) => (),
                 Err(_) => {
-                    let _ = writeln!(stderr, "error calling 'print' ({})",
-                                     L.tostring(-1).unwrap_or_default());
+                    let _ = writeln!(stderr, "error calling 'print' ({})", L.describe(-1));
                     continue;
                 }
             }

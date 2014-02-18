@@ -20,7 +20,7 @@ fn main() {
         Err(_) => {
             // If something went wrong, error message is at the top of the stack
             let _ = writeln!(&mut io::stderr(),
-                             "Couldn't load file: {}", L.tostring(-1).unwrap_or_default());
+                             "Couldn't load file: {}", L.describe(-1));
             os::set_exit_status(1);
             return;
         }
@@ -62,7 +62,7 @@ fn main() {
         Ok(()) => (),
         Err(_) => {
             let _ = writeln!(&mut io::stderr(),
-                             "Failed to run script: {}", L.tostring(-1).unwrap_or_default());
+                             "Failed to run script: {}", L.describe(-1));
             os::set_exit_status(1);
             return;
         }
