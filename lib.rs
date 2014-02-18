@@ -819,22 +819,17 @@ impl State {
     }
 
     /// If the value at the given acceptable index is a full userdata, returns its block address.
-    /// If the value is a light userdata, returns its pointer. Otherwise, returns None.
-    pub fn touserdata(&mut self, index: i32) -> Option<*mut libc::c_void> {
+    /// If the value is a light userdata, returns its pointer. Otherwise, returns ptr::null().
+    pub fn touserdata(&mut self, index: i32) -> *mut libc::c_void {
         #[inline];
         self.check_acceptable(index);
         unsafe { self.touserdata_unchecked(index) }
     }
 
     /// Unchecked variant of touserdata()
-    pub unsafe fn touserdata_unchecked(&mut self, index: i32) -> Option<*mut libc::c_void> {
+    pub unsafe fn touserdata_unchecked(&mut self, index: i32) -> *mut libc::c_void {
         #[inline];
-        let ud = raw::lua_touserdata(self.L, index as c_int);
-        if ud.is_null() {
-            None
-        } else {
-            Some(ud)
-        }
+        raw::lua_touserdata(self.L, index as c_int)
     }
 
     /// Converts the value at the given acceptable index to a Lua thread (represented as a State).
