@@ -162,6 +162,7 @@ pub type LoadError = LoadError::LoadError;
 pub mod LoadError {
     //! State.load() error mod
     use raw;
+    use std::fmt;
     /// State.load() errors
     pub enum LoadError {
         /// Syntax error during pre-compilation
@@ -169,13 +170,19 @@ pub mod LoadError {
         /// Memory allocation error
         ErrMem = raw::LUA_ERRMEM
     }
-}
 
-impl ToStr for LoadError {
-    fn to_str(&self) -> ~str {
-        match *self {
-            LoadError::ErrSyntax => ~"syntax error",
-            LoadError::ErrMem => ~"memory allocation error"
+    impl fmt::Show for LoadError {
+        fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+            match *self {
+                ErrSyntax => f.pad("syntax error"),
+                ErrMem => f.pad("memory allocation error")
+            }
+        }
+    }
+
+    impl ToStr for LoadError {
+        fn to_str(&self) -> ~str {
+            format!("{}", *self)
         }
     }
 }
@@ -186,6 +193,7 @@ pub mod LoadFileError {
     //! State.loadfile() error mod
     use aux;
     use raw;
+    use std::fmt;
     /// State.loadfile() errors
     pub enum LoadFileError {
         /// Syntax error during pre-compilation
@@ -195,14 +203,20 @@ pub mod LoadFileError {
         /// Cannot read/open the file
         ErrFile = aux::raw::LUA_ERRFILE
     }
-}
 
-impl ToStr for LoadFileError {
-    fn to_str(&self) -> ~str {
-        match *self {
-            LoadFileError::ErrSyntax => ~"syntax error",
-            LoadFileError::ErrMem => ~"memory allocation error",
-            LoadFileError::ErrFile => ~"file read/open error"
+    impl fmt::Show for LoadFileError {
+        fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+            match *self {
+                ErrSyntax => f.pad("syntax error"),
+                ErrMem => f.pad("memory allocation error"),
+                ErrFile => f.pad("file read/open error")
+            }
+        }
+    }
+
+    impl ToStr for LoadFileError {
+        fn to_str(&self) -> ~str {
+            format!("{}", *self)
         }
     }
 }
@@ -212,7 +226,8 @@ pub type PCallError = PCallError::PCallError;
 pub mod PCallError {
     //! State.pcall() error mod
     use raw;
-    use libc::c_int;
+    use std::libc::c_int;
+    use std::fmt;
     /// State.pcall() errors
     pub enum PCallError {
         /// Runtime error
@@ -233,13 +248,19 @@ pub mod PCallError {
         }
     }
 
+    impl fmt::Show for PCallError {
+        fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+            match *self {
+                ErrRun => f.pad("runtime error"),
+                ErrMem => f.pad("memory allocation error"),
+                ErrErr => f.pad("error handler func error")
+            }
+        }
+    }
+
     impl ToStr for PCallError {
         fn to_str(&self) -> ~str {
-            match *self {
-                ErrRun => ~"runtime error",
-                ErrMem => ~"memory allocation error",
-                ErrErr => ~"error handler func error"
-            }
+            format!("{}", *self)
         }
     }
 }
