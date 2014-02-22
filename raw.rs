@@ -1,3 +1,5 @@
+#[allow(non_camel_case_types)];
+
 use config;
 use std::{default, libc, ptr};
 use std::libc::c_int;

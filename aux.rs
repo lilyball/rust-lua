@@ -22,6 +22,7 @@ pub mod raw {
     pub static LUA_NOREF: c_int = -2;
     pub static LUA_REFNIL: c_int = -1;
 
+    #[allow(non_camel_case_types)]
     pub struct luaL_Reg {
         name: *libc::c_char,
         func: Option<lua_CFunction>
@@ -140,8 +141,8 @@ pub mod raw {
 
     // Generic Buffer manipulation
 
-    pub struct luaL_Buffer {
-        p: *mut libc::c_char, // current position in buffer
+    #[allow(non_camel_case_types)]
+    pub struct luaL_Buffer { p: *mut libc::c_char, // current position in buffer
         lvl: c_int, // number of strings in the stack (level)
         L: *mut lua_State,
         buffer: [libc::c_char, ..LUAL_BUFFERSIZE]
