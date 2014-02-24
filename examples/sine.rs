@@ -16,21 +16,17 @@ fn main() {
 }
 
 lua_extern! {
-    fn my_sin(L: &mut lua::ExternState) -> i32 {
-        unsafe {
-            let input = L.checknumber(1);
-            let output = num::sin(input);
-            L.pushnumber(output);
-            1
-        }
+    unsafe fn my_sin(L: &mut lua::ExternState) -> i32 {
+        let input = L.checknumber(1);
+        let output = num::sin(input);
+        L.pushnumber(output);
+        1
     }
 
-    fn my_cos(L: &mut lua::ExternState) -> i32 {
-        unsafe {
-            let input = L.checknumber(1);
-            let output = num::cos(input);
-            L.pushnumber(output);
-            1
-        }
+    unsafe fn my_cos(L: &mut lua::ExternState) -> i32 {
+        let input = L.checknumber(1);
+        let output = num::cos(input);
+        L.pushnumber(output);
+        1
     }
 }
