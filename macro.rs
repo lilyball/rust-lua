@@ -2,7 +2,7 @@
 
 #[macro_export]
 macro_rules! lua_extern {
-    ($(unsafe fn $name:ident($arg:ident: $typ:ty) -> i32 $code:block)+) => (
+    ($(unsafe fn $name:ident($arg:ident: &mut $typ:ty) -> i32 $code:block)+) => (
         $(
             extern "C" fn $name($arg: *mut ::lua::raw::lua_State) -> ::std::libc::c_int {
                 unsafe {
@@ -10,7 +10,7 @@ macro_rules! lua_extern {
                     return inner(&mut $arg) as ::std::libc::c_int;
                 }
 
-                unsafe fn inner($arg: $typ) -> i32 $code
+                unsafe fn inner($arg: &mut $typ) -> i32 $code
             }
         )+
     )
