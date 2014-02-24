@@ -12,9 +12,11 @@ fn main() {
 }
 
 extern "C" fn my_sin(L: *mut lua::raw::lua_State) -> libc::c_int {
-    let mut L = unsafe { lua::State::from_lua_State(L) };
-    let input = L.checknumber(1);
-    let output = num::sin(input);
-    L.pushnumber(output);
-    1
+    unsafe {
+        let mut L = lua::ExternState::from_lua_State(L);
+        let input = L.checknumber(1);
+        let output = num::sin(input);
+        L.pushnumber(output);
+        1
+    }
 }
