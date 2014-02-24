@@ -54,6 +54,8 @@ pub mod aux;
 #[allow(missing_doc)]
 pub mod lib;
 
+mod macro;
+
 #[cfg(test)]
 mod tests;
 
