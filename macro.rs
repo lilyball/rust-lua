@@ -15,3 +15,19 @@ macro_rules! lua_extern {
         )+
     )
 }
+
+#[macro_export]
+macro_rules! lua_extern_pub {
+    ($(unsafe fn $name:ident($arg:ident: &mut $typ:ty) -> i32 $code:block)+) => (
+        $(
+            pub extern "C" fn $name($arg: *mut ::lua::raw::lua_State) -> ::std::libc::c_int {
+                unsafe {
+                    let mut $arg = ::lua::ExternState::from_lua_State($arg);
+                    return inner(&mut $arg) as ::std::libc::c_int;
+                }
+
+                unsafe fn inner($arg: &mut $typ) -> i32 $code
+            }
+        )+
+    )
+}
