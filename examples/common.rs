@@ -21,7 +21,7 @@ pub fn repl(L: &mut lua::State) {
         }
         match L.loadbuffer(line, "=stdin") {
             Ok(_) => (),
-            Err(err) => { let _ = writeln!(stderr, "{}", err.to_str()); continue; }
+            Err(err) => { let _ = writeln!(stderr, "{}", err); continue; }
         }
         match L.pcall(0, lua::MULTRET, 0) {
             Ok(_) => (),
