@@ -181,12 +181,6 @@ pub mod LoadError {
             }
         }
     }
-
-    impl ToStr for LoadError {
-        fn to_str(&self) -> ~str {
-            format!("{}", *self)
-        }
-    }
 }
 
 /// State.loadfile() errors
@@ -213,12 +207,6 @@ pub mod LoadFileError {
                 ErrMem => f.pad("memory allocation error"),
                 ErrFile => f.pad("file read/open error")
             }
-        }
-    }
-
-    impl ToStr for LoadFileError {
-        fn to_str(&self) -> ~str {
-            format!("{}", *self)
         }
     }
 }
@@ -257,12 +245,6 @@ pub mod PCallError {
                 ErrMem => f.pad("memory allocation error"),
                 ErrErr => f.pad("error handler func error")
             }
-        }
-    }
-
-    impl ToStr for PCallError {
-        fn to_str(&self) -> ~str {
-            format!("{}", *self)
         }
     }
 }
