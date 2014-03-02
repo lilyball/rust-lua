@@ -81,7 +81,7 @@ pub mod Type {
     use std::{libc, ptr, str};
 
     /// Lua value types
-    #[deriving(Clone,Eq)]
+    #[deriving(Clone,Eq,Show)]
     pub enum Type {
         /// Type for nil
         Nil = raw::LUA_TNIL,
