@@ -4,6 +4,7 @@ use Type;
 use raw;
 
 use std::{libc, task};
+use std::any::AnyRefExt;
 
 #[test]
 fn test_state_init() {
