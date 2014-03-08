@@ -1,3 +1,5 @@
+#[allow(uppercase_variables)];
+
 extern crate lua;
 
 fn main() {

@@ -4,6 +4,8 @@
 // The Rust program loads a Lua script file, sets some Lua variables, runs the
 // Lua script, and reads back the return value.
 
+#[allow(uppercase_variables)];
+
 extern crate lua;
 
 use std::{io, os};

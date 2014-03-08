@@ -1,6 +1,8 @@
 // Sample code that shows how to traverse a table.
 // We'll use it to traverse the global table
 
+#[allow(uppercase_variables)];
+
 extern crate lua;
 
 fn main() {

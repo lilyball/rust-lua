@@ -9,6 +9,7 @@
 #[feature(macro_rules)];
 
 #[warn(missing_doc)];
+#[allow(uppercase_variables)];
 
 use std::libc;
 use std::libc::c_int;
