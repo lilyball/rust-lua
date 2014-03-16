@@ -14,6 +14,7 @@
 use std::libc;
 use std::libc::c_int;
 use std::{cast, path, ptr, str, vec};
+use std::vec_ng::Vec;
 use std::c_str::CString;
 
 /// Human-readable major version string
@@ -2789,8 +2790,8 @@ impl<'l> ExternState<'l> {
 impl<'l> RawState<'l> {
     pub unsafe fn registerlib(&mut self, libname: Option<&str>, l: &[(&str,CFunction)]) {
         #[inline];
-        let mut cstrs = vec::with_capacity(l.len());
-        let mut l_ = vec::with_capacity(l.len()+1);
+        let mut cstrs = Vec::with_capacity(l.len());
+        let mut l_ = Vec::with_capacity(l.len()+1);
         for &(name, func) in l.iter() {
             let cstr = name.to_c_str();
             cstr.with_ref(|name| l_.push(aux::raw::luaL_Reg{ name: name, func: Some(func) }));
@@ -2920,8 +2921,8 @@ impl<'l> RawState<'l> {
                                     -> &'a T {
         let def_cstr = def.map(|d| d.to_c_str());
         let defp = def_cstr.as_ref().map_or(ptr::null(), |c| c.with_ref(|p| p));
-        let mut lst_cstrs = vec::with_capacity(lst.len());
-        let mut lstv = vec::with_capacity(lst.len()+1);
+        let mut lst_cstrs = Vec::with_capacity(lst.len());
+        let mut lstv = Vec::with_capacity(lst.len()+1);
         for &(k,_) in lst.iter() {
             let cstr = k.to_c_str();
             let p = cstr.with_ref(|p| p);
