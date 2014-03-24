@@ -13,8 +13,7 @@
 
 use std::libc;
 use std::libc::c_int;
-use std::{cast, path, ptr, str, vec};
-use std::vec_ng::Vec;
+use std::{cast, path, ptr, str, slice};
 use std::c_str::CString;
 
 /// Human-readable major version string
@@ -1803,7 +1802,7 @@ impl<'l> RawState<'l> {
         if s.is_null() {
             None
         } else {
-            vec::raw::buf_as_slice(s as *u8, sz as uint, |b| {
+            slice::raw::buf_as_slice(s as *u8, sz as uint, |b| {
                 Some(cast::transmute::<&[u8], &'static [u8]>(b))
             })
         }
@@ -2840,7 +2839,7 @@ impl<'l> RawState<'l> {
         #[inline];
         let mut sz: libc::size_t = 0;
         let s = aux::raw::luaL_checklstring(self.L, narg, &mut sz);
-        vec::raw::buf_as_slice(s as *u8, sz as uint, |b| {
+        slice::raw::buf_as_slice(s as *u8, sz as uint, |b| {
             cast::transmute::<&[u8], &'static [u8]>(b)
         })
     }
@@ -2858,7 +2857,7 @@ impl<'l> RawState<'l> {
         #[inline];
         let mut sz: libc::size_t = 0;
         let s = d.with_c_str(|d| aux::raw::luaL_optlstring(self.L, narg, d, &mut sz));
-        vec::raw::buf_as_slice(s as *u8, sz as uint, |b| {
+        slice::raw::buf_as_slice(s as *u8, sz as uint, |b| {
             cast::transmute::<&[u8], &'static [u8]>(b)
         })
     }
