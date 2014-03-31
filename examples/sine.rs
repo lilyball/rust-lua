@@ -1,6 +1,6 @@
-#[feature(phase)];
+#![feature(phase)]
 
-#[allow(uppercase_variables)];
+#![allow(uppercase_variables)]
 
 #[phase(syntax,link)]
 extern crate lua;

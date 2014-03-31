@@ -1,4 +1,4 @@
-#[allow(uppercase_variables)];
+#![allow(uppercase_variables)]
 
 extern crate lua;
 

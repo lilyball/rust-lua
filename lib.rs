@@ -1,15 +1,15 @@
 //! Lua 5.1 bindings for Rust
 
-#[crate_id="github.com/kballard/rust-lua#lua:0.1"];
+#![crate_id="github.com/kballard/rust-lua#lua:0.1"]
 
-#[comment = "Lua 5.1 bindings for Rust"];
-#[license = "MIT"];
-#[crate_type = "rlib"];
+#![comment = "Lua 5.1 bindings for Rust"]
+#![license = "MIT"]
+#![crate_type = "rlib"]
 
-#[feature(macro_rules)];
+#![feature(macro_rules)]
 
-#[warn(missing_doc)];
-#[allow(uppercase_variables)];
+#![warn(missing_doc)]
+#![allow(uppercase_variables)]
 
 use std::libc;
 use std::libc::c_int;
@@ -40,7 +40,7 @@ pub static ENVIRONINDEX: i32 = raw::LUA_ENVIRONINDEX as i32;
 /// Any index in the range [1,256] produces an acceptable index.
 /// Any index outside that range will likely produce an unacceptable index.
 pub fn upvalueindex(n: i32) -> i32 {
-    #[inline];
+    #![inline]
     raw::lua_upvalueindex(n as c_int) as i32
 }
 
@@ -312,7 +312,7 @@ pub struct RawState<'a> {
 impl State {
     /// Returns a new State, or fails if memory cannot be allocated for the state
     pub fn new() -> State {
-        #[inline];
+        #![inline]
         State::new_opt().unwrap()
     }
 
@@ -351,7 +351,7 @@ impl State {
 impl<'l> ExternState<'l> {
     /// Wraps a *raw::lua_State in a ExternState.
     pub unsafe fn from_lua_State(L: *mut raw::lua_State) -> ExternState<'static> {
-        #[inline];
+        #![inline]
         ExternState{ L: L, stackspace: MINSTACK }
     }
 }
@@ -359,7 +359,7 @@ impl<'l> ExternState<'l> {
 impl<'l> RawState<'l> {
     /// Wraps a *raw::lua_State in a RawState.
     pub unsafe fn from_lua_State(L: *mut raw::lua_State) -> RawState<'static> {
-        #[inline];
+        #![inline]
         RawState{ L: L, stackspace: MINSTACK }
     }
 }
@@ -368,13 +368,13 @@ impl<'l> RawState<'l> {
 impl State {
     /// Returns the same state as an ExternState
     pub fn as_extern<'a>(&'a mut self) -> &'a mut ExternState<'a> {
-        #[inline];
+        #![inline]
         unsafe { cast::transmute(self) }
     }
 
     /// Returns the same state as a RawState
     pub fn as_raw<'a>(&'a mut self) -> &'a mut RawState<'a> {
-        #[inline];
+        #![inline]
         unsafe { cast::transmute(self) }
     }
 }
@@ -382,7 +382,7 @@ impl State {
 impl<'a> ExternState<'a> {
     /// Returns the same state as a RawState
     pub fn as_raw(&mut self) -> &'a mut RawState<'a> {
-        #[inline];
+        #![inline]
         unsafe { cast::transmute(self) }
     }
 }
@@ -390,7 +390,7 @@ impl<'a> ExternState<'a> {
 impl State {
     /// Provides unsafe access to the underlying *lua_State
     pub unsafe fn get_lua_State(&mut self) -> *mut raw::lua_State {
-        #[inline];
+        #![inline]
         self.L
     }
 }
@@ -398,7 +398,7 @@ impl State {
 impl<'l> ExternState<'l> {
     /// Provides unsafe access to the underlying *lua_State
     pub unsafe fn get_lua_State(&mut self) -> *mut raw::lua_State {
-        #[inline];
+        #![inline]
         self.L
     }
 }
@@ -406,7 +406,7 @@ impl<'l> ExternState<'l> {
 impl<'l> RawState<'l> {
     /// Provides unsafe access to the underlying *lua_State
     pub unsafe fn get_lua_State(&mut self) -> *mut raw::lua_State {
-        #[inline];
+        #![inline]
         self.L
     }
 }
@@ -421,7 +421,7 @@ impl State {
     /// This new state does not get explicitly closed. Threads are subject to
     /// garbage collection, like any Lua object.
     pub fn newthread(&mut self) -> State {
-        #[inline(always)];
+        #![inline(always)]
         unsafe { self.as_raw().newthread() }
     }
 
@@ -434,14 +434,14 @@ impl State {
     /// the default one, or should fail!() itself. Otherwise, the application
     /// will be terminated.
     pub unsafe fn atpanic(&mut self, panicf: CFunction) -> CFunction {
-        #[inline(always)];
+        #![inline(always)]
         self.as_raw().atpanic(panicf)
     }
 
     /// Returns the textual description of the value at the given acceptable index.
     /// Returns "" if the given index is non-valid.
     pub fn describe(&mut self, idx: i32) -> ~str {
-        #[inline(always)];
+        #![inline(always)]
         unsafe { self.as_extern().describe(idx) }
     }
 
@@ -451,14 +451,14 @@ impl State {
     /// behavior to be disabled. If usestack is true, this method may require 1
     /// free slot on the stack.
     pub fn describe_(&mut self, idx: i32, usestack: bool) -> ~str {
-        #[inline(always)];
+        #![inline(always)]
         unsafe { self.as_extern().describe_(idx, usestack) }
     }
 
     /// Returns the index of the top element of the stack.
     /// Indexes start at 1. 0 means the stack is empty.
     pub fn gettop(&mut self) -> i32 {
-        #[inline(always)];
+        #![inline(always)]
         self.as_extern().gettop()
     }
 
@@ -467,13 +467,13 @@ impl State {
     /// nil.
     /// If the index is 0, all stack elements are removed.
     pub fn settop(&mut self, idx: i32) {
-        #[inline(always)];
+        #![inline(always)]
         unsafe { self.as_extern().settop(idx) }
     }
 
     /// Pushes a copy of the element at the given valid index onto the stack.
     pub fn pushvalue(&mut self, idx: i32) {
-        #[inline(always)];
+        #![inline(always)]
         unsafe { self.as_extern().pushvalue(idx) }
     }
 
@@ -481,7 +481,7 @@ impl State {
     /// as needed.
     /// Pseudo-indices are not valid for this call.
     pub fn remove(&mut self, idx: i32) {
-        #[inline(always)];
+        #![inline(always)]
         unsafe { self.as_extern().remove(idx) }
     }
 
@@ -489,28 +489,28 @@ impl State {
     /// elements as needed.
     /// Pseudo-indices are not valid for this call.
     pub fn insert(&mut self, idx: i32) {
-        #[inline(always)];
+        #![inline(always)]
         unsafe { self.as_extern().insert(idx) }
     }
 
     /// Moves the top element into the given valid index and replaces the
     /// existing value, without shifting any other elements.
     pub fn replace(&mut self, idx: i32) {
-        #[inline(always)];
+        #![inline(always)]
         unsafe { self.as_extern().replace(idx) }
     }
 
     /// Ensures the stack contains at least `extra` free slots on the stack.
     /// Returns false if it cannot grow the stack as requested.
     pub fn checkstack(&mut self, extra: i32) -> bool {
-        #[inline(always)];
+        #![inline(always)]
         unsafe { self.as_extern().checkstack(extra) }
     }
 
     /// Ensures the stack contains at least `extra` free slots on the stack.
     /// Throws an error if it cannot grow the stack.
     pub fn checkstack_(&mut self, extra: i32) {
-        #[inline(always)];
+        #![inline(always)]
         unsafe { self.as_extern().checkstack_(extra) }
     }
 
@@ -523,49 +523,49 @@ impl State {
     ///
     /// Despite being unsafe, it still checks the validity of `n`.
     pub unsafe fn xmove(&mut self, to: &mut State, n: i32) {
-        #[inline(always)];
+        #![inline(always)]
         self.as_extern().xmove(to.as_extern(), n)
     }
 
     /// Returns `true` if the value at the given acceptable index is a number,
     /// or a string convertible to a number.
     pub fn isnumber(&mut self, idx: i32) -> bool {
-        #[inline(always)];
+        #![inline(always)]
         unsafe { self.as_extern().isnumber(idx) }
     }
 
     /// Returns `true` if the value at the given acceptable index is a string
     /// or a number (which is always convertible to a string).
     pub fn isstring(&mut self, idx: i32) -> bool {
-        #[inline(always)];
+        #![inline(always)]
         unsafe { self.as_extern().isstring(idx) }
     }
 
     /// Returns `true` if the value at the given acceptable index is a C
     /// function.
     pub fn iscfunction(&mut self, idx: i32) -> bool {
-        #[inline(always)];
+        #![inline(always)]
         unsafe { self.as_extern().iscfunction(idx) }
     }
 
     /// Returns `true` if the value at the given acceptable index is a userdata
     /// (either full or light).
     pub fn isuserdata(&mut self, idx: i32) -> bool {
-        #[inline(always)];
+        #![inline(always)]
         unsafe { self.as_extern().isuserdata(idx) }
     }
 
     /// Returns the type of the value at the given acceptable index.  If the
     /// given index is non-valid, returns None.
     pub fn type_(&mut self, idx: i32) -> Option<Type> {
-        #[inline(always)];
+        #![inline(always)]
         unsafe { self.as_extern().type_(idx) }
     }
 
     /// Returns the name of the type of the value at the given acceptable
     /// index.
     pub fn typename(&mut self, idx: i32) -> &'static str {
-        #[inline(always)];
+        #![inline(always)]
         unsafe { self.as_extern().typename(idx) }
     }
 
@@ -573,7 +573,7 @@ impl State {
     /// `index2` are equal, following the semantics of the Lua == operator.
     /// Returns `false` if any indices are non-valid.
     pub fn equal(&mut self, index1: i32, index2: i32) -> bool {
-        #[inline(always)];
+        #![inline(always)]
         unsafe { self.as_extern().equal(index1, index2) }
     }
 
@@ -581,7 +581,7 @@ impl State {
     /// `index2` are primitively equal (that is, without calling any
     /// metamethods). Returns `false` if any indices are non-valid.
     pub fn rawequal(&mut self, index1: i32, index2: i32) -> bool {
-        #[inline(always)];
+        #![inline(always)]
         unsafe { self.as_extern().rawequal(index1, index2) }
     }
 
@@ -589,7 +589,7 @@ impl State {
     /// than the value at acceptable index `index2`, following the semantics of
     /// the Lua < operator. Returns `false` if any indices are non-valid.
     pub fn lessthan(&mut self, index1: i32, index2: i32) -> bool {
-        #[inline(always)];
+        #![inline(always)]
         unsafe { self.as_extern().lessthan(index1, index2) }
     }
 
@@ -597,7 +597,7 @@ impl State {
     /// value must be a number or a string convertible to a number; otherwise,
     /// tonumber returns 0.
     pub fn tonumber(&mut self, idx: i32) -> f64 {
-        #[inline(always)];
+        #![inline(always)]
         unsafe { self.as_extern().tonumber(idx) }
     }
 
@@ -605,14 +605,14 @@ impl State {
     /// value must be a number or a string convertiable to a number; otherwise,
     /// toint returns 0.
     pub fn tointeger(&mut self, idx: i32) -> int {
-        #[inline(always)];
+        #![inline(always)]
         unsafe { self.as_extern().tointeger(idx) }
     }
 
     /// Converts the value at the given acceptable index to a bool.
     /// Returns false when called with a non-valid index.
     pub fn toboolean(&mut self, idx: i32) -> bool {
-        #[inline(always)];
+        #![inline(always)]
         unsafe { self.as_extern().toboolean(idx) }
     }
 
@@ -625,7 +625,7 @@ impl State {
     /// stack to a string.  This may confuse lua_next if this is called during
     /// table traversal.
     pub fn tostring<'a>(&'a mut self, idx: i32) -> Option<&'a str> {
-        #[inline(always)];
+        #![inline(always)]
         unsafe { cast::transmute(self.as_extern().tostring(idx)) }
     }
 
@@ -634,20 +634,20 @@ impl State {
     /// Returns None if the value is not a number or a string.
     /// See tostring() for caveats.
     pub fn tobytes<'a>(&'a mut self, idx: i32) -> Option<&'a [u8]> {
-        #[inline(always)];
+        #![inline(always)]
         unsafe { cast::transmute(self.as_extern().tobytes(idx)) }
     }
 
     /// Returns the "length" of the value at the given acceptable index.
     pub fn objlen(&mut self, idx: i32) -> uint {
-        #[inline(always)];
+        #![inline(always)]
         unsafe { self.as_extern().objlen(idx) }
     }
 
     /// Converts a value at the given acceptable index to a C function. The
     /// value must be a C function; otherwise, returns None.
     pub fn tocfunction(&mut self, idx: i32) -> Option<CFunction> {
-        #[inline(always)];
+        #![inline(always)]
         unsafe { self.as_extern().tocfunction(idx) }
     }
 
@@ -655,7 +655,7 @@ impl State {
     /// its block address. If the value is a light userdata, returns its
     /// pointer. Otherwise, returns ptr::null().
     pub fn touserdata(&mut self, idx: i32) -> *mut libc::c_void {
-        #[inline(always)];
+        #![inline(always)]
         unsafe { self.as_extern().touserdata(idx) }
     }
 
@@ -667,44 +667,44 @@ impl State {
     /// available stack space. .checkstack() must be called in order to
     /// consider any non-valid index as acceptable.
     pub fn tothread(&mut self, idx: i32) -> Option<State> {
-        #[inline(always)];
+        #![inline(always)]
         unsafe { cast::transmute(self.as_extern().tothread(idx)) }
     }
 
     /// Converts the value at the given acceptable index to a pointer. The
     /// value can be a userdata, a table, a thread, or a function.
     pub fn topointer(&mut self, idx: i32) -> *libc::c_void {
-        #[inline(always)];
+        #![inline(always)]
         unsafe { self.as_extern().topointer(idx) }
     }
 
     /// Pushes a nil value onto the stack.
     pub fn pushnil(&mut self) {
-        #[inline(always)];
+        #![inline(always)]
         unsafe { self.as_extern().pushnil() }
     }
 
     /// Pushes a number with value `n` onto the stack
     pub fn pushnumber(&mut self, n: f64) {
-        #[inline(always)];
+        #![inline(always)]
         unsafe { self.as_extern().pushnumber(n) }
     }
 
     /// Pushes a number with value `n` onto the stack.
     pub fn pushinteger(&mut self, n: int) {
-        #[inline(always)];
+        #![inline(always)]
         unsafe { self.as_extern().pushinteger(n) }
     }
 
     /// Pushes a string onto the stack
     pub fn pushstring(&mut self, s: &str) {
-        #[inline(always)];
+        #![inline(always)]
         unsafe { self.as_extern().pushstring(s) }
     }
 
     /// Pushes a byte vector onto the stack as a lua string
     pub fn pushbytes(&mut self, bytes: &[u8]) {
-        #[inline(always)];
+        #![inline(always)]
         unsafe { self.as_extern().pushbytes(bytes) }
     }
 
@@ -721,26 +721,26 @@ impl State {
     /// `n` must be in the range [0, 255]. Anything outside this range will
     /// throw an error.
     pub fn pushcclosure(&mut self, f: CFunction, n: i32) {
-        #[inline(always)];
+        #![inline(always)]
         unsafe { self.as_extern().pushcclosure(f, n) }
     }
 
     /// Pushes a boolean value onto the stack.
     pub fn pushboolean(&mut self, b: bool) {
-        #[inline(always)];
+        #![inline(always)]
         unsafe { self.as_extern().pushboolean(b) }
     }
 
     /// Pushes a light userdata onto the stack.
     pub fn pushlightuserdata(&mut self, p: *mut libc::c_void) {
-        #[inline(always)];
+        #![inline(always)]
         unsafe { self.as_extern().pushlightuserdata(p) }
     }
 
     /// Pushes the thread represented by `self` onto the stack. Returns `true`
     /// if this thread is the main thread of the state.
     pub fn pushthread(&mut self) -> bool {
-        #[inline(always)];
+        #![inline(always)]
         unsafe { self.as_extern().pushthread() }
     }
 
@@ -748,20 +748,20 @@ impl State {
     /// valid index and k is the value at the top of the stack. The key is
     /// popped from the stack.
     pub fn gettable(&mut self, idx: i32) {
-        #[inline(always)];
+        #![inline(always)]
         unsafe { self.as_extern().gettable(idx) }
     }
 
     /// Pushes onto the stack the value t[k], where t is the value at the given
     /// valid index. Fails the task if `k` has any interior NULs.
     pub fn getfield(&mut self, idx: i32, k: &str) {
-        #[inline(always)];
+        #![inline(always)]
         unsafe { self.as_extern().getfield(idx, k) }
     }
 
     /// Similar to gettable(), but does a raw access
     pub fn rawget(&mut self, idx: i32) {
-        #[inline(always)];
+        #![inline(always)]
         unsafe { self.as_extern().rawget(idx) }
     }
 
@@ -769,7 +769,7 @@ impl State {
     /// valid index. The access is raw; that is, it does not invoke
     /// metamethods.
     pub fn rawgeti(&mut self, idx: i32, n: i32) {
-        #[inline(always)];
+        #![inline(always)]
         unsafe { self.as_extern().rawgeti(idx, n) }
     }
 
@@ -777,7 +777,7 @@ impl State {
     /// has space pre-allocated for `narr` array elements and `nrec` non-array
     /// elements.
     pub fn createtable(&mut self, narr: i32, nrec: i32) {
-        #[inline(always)];
+        #![inline(always)]
         unsafe { self.as_extern().createtable(narr, nrec) }
     }
 
@@ -785,7 +785,7 @@ impl State {
     /// onto the stack a new full userdata with the block address, and returns
     /// this address.
     pub fn newuserdata(&mut self, size: uint) -> *mut libc::c_void {
-        #[inline(always)];
+        #![inline(always)]
         unsafe { self.as_extern().newuserdata(size) }
     }
 
@@ -794,14 +794,14 @@ impl State {
     /// a metatable, the function returns `false` and pushes nothing onto the
     /// stack.
     pub fn getmetatable(&mut self, idx: i32) -> bool {
-        #[inline(always)];
+        #![inline(always)]
         unsafe { self.as_extern().getmetatable(idx) }
     }
 
     /// Pushes onto the stack the environment table of the value at the given
     /// index.
     pub fn getfenv(&mut self, idx: i32) {
-        #[inline(always)];
+        #![inline(always)]
         unsafe { self.as_extern().getfenv(idx) }
     }
 
@@ -811,7 +811,7 @@ impl State {
     ///
     /// This function pops both the key and the value from the stack.
     pub fn settable(&mut self, idx: i32) {
-        #[inline(always)];
+        #![inline(always)]
         unsafe { self.as_extern().settable(idx) }
     }
 
@@ -822,13 +822,13 @@ impl State {
     ///
     /// Fails the task if `k` contains interior NULs.
     pub fn setfield(&mut self, idx: i32, k: &str) {
-        #[inline(always)];
+        #![inline(always)]
         unsafe { self.as_extern().setfield(idx, k) }
     }
 
     /// Similar to settable(), but does a raw assignment.
     pub fn rawset(&mut self, idx: i32) {
-        #[inline(always)];
+        #![inline(always)]
         unsafe { self.as_extern().rawset(idx) }
     }
 
@@ -838,14 +838,14 @@ impl State {
     /// This function pops the value from the stack. The assignment is raw;
     /// that is, it does not invoke metamethods.
     pub fn rawseti(&mut self, idx: i32, n: i32) {
-        #[inline(always)];
+        #![inline(always)]
         unsafe { self.as_extern().rawseti(idx, n) }
     }
 
     /// Pops a table from the stack and sets it as the new metatable for the
     /// value at the given acceptable index.
     pub fn setmetatable(&mut self, idx: i32) {
-        #[inline(always)];
+        #![inline(always)]
         unsafe { self.as_extern().setmetatable(idx) }
     }
 
@@ -854,7 +854,7 @@ impl State {
     /// function nor a thread nor a userdata, setfenv() returns `false`.
     /// Otherwise, returns `true`.
     pub fn setfenv(&mut self, idx: i32) -> bool {
-        #[inline(always)];
+        #![inline(always)]
         unsafe { self.as_extern().setfenv(idx) }
     }
 
@@ -865,7 +865,7 @@ impl State {
     /// The function results are adjusted to `nresults`, unless `nresults` is
     /// `MULTRET`, in which case all function results are pushed.
     pub fn call(&mut self, nargs: i32, nresults: i32) {
-        #[inline(always)];
+        #![inline(always)]
         unsafe { self.as_extern().call(nargs, nresults) }
     }
 
@@ -880,7 +880,7 @@ impl State {
     /// exactly the original error message. Otherwise, `errfunc` is the stack
     /// index of an error handler function. It must not be a pseudo-index.
     pub fn pcall(&mut self, nargs: i32, nresults: i32, errfunc: i32) -> Result<(),PCallError> {
-        #[inline(always)];
+        #![inline(always)]
         unsafe { self.as_extern().pcall(nargs, nresults, errfunc) }
     }
 
@@ -903,7 +903,7 @@ impl State {
     /// Fails the task if `chunkname` contains interior NULs.
     pub fn load(&mut self, reader: Reader, data: *mut libc::c_void, chunkname: &str)
                -> Result<(),LoadError> {
-        #[inline(always)];
+        #![inline(always)]
         unsafe { self.as_extern().load(reader, data, chunkname) }
     }
 
@@ -918,7 +918,7 @@ impl State {
     ///
     /// This function does not pop the Lua function from the stack.
     pub fn dump(&mut self, writer: Writer, data: *mut libc::c_void) -> Result<(),i32> {
-        #[inline(always)];
+        #![inline(always)]
         unsafe { self.as_extern().dump(writer, data) }
     }
 
@@ -934,7 +934,7 @@ impl State {
     /// coroutine returns. The parameter `nresults` is the number of values
     /// from the stack that are passed as the results to resume().
     pub fn yield_(&mut self, nresults: i32) -> c_int {
-        #[inline(always)];
+        #![inline(always)]
         unsafe { self.as_extern().yield_(nresults) }
     }
 
@@ -953,7 +953,7 @@ impl State {
     /// put on its stack only the values to be passed as results from yield_(),
     /// and then call resume().
     pub fn resume(&mut self, narg: i32) -> Result<bool,PCallError> {
-        #[inline(always)];
+        #![inline(always)]
         unsafe { self.as_extern().resume(narg) }
     }
 
@@ -963,7 +963,7 @@ impl State {
     /// is suspended, or Err(PCallError) if the thread finished its execution
     /// with an error.
     pub fn status(&mut self) -> Result<bool,PCallError> {
-        #[inline(always)];
+        #![inline(always)]
         unsafe { self.as_extern().status() }
     }
 
@@ -973,13 +973,13 @@ impl State {
     /// parameter `what`. See the `GC` enum for documentation on the various
     /// options.
     pub fn gc(&mut self, what: GC, data: i32) -> i32 {
-        #[inline(always)];
+        #![inline(always)]
         unsafe { self.as_extern().gc(what, data) }
     }
 
     /// Raises an error (using the value at the top of the stack)
     pub fn error(&mut self) -> ! {
-        #[inline(always)];
+        #![inline(always)]
         unsafe { self.as_extern().error() }
     }
 
@@ -1004,7 +1004,7 @@ impl State {
     /// that tostring() changes the value at the given index; this confuses the
     /// next call to next().
     pub fn next(&mut self, idx: i32) -> bool {
-        #[inline(always)];
+        #![inline(always)]
         unsafe { self.as_extern().next(idx) }
     }
 
@@ -1012,7 +1012,7 @@ impl State {
     /// leaves the result at the top.
     /// Errors if n is negative or larger than the stack top.
     pub fn concat(&mut self, n: i32) {
-        #[inline(always)];
+        #![inline(always)]
         unsafe { self.as_extern().concat(n) }
     }
 
@@ -1023,107 +1023,107 @@ impl State {
     /// provides a default alloc function that behaves identically to the one
     /// used by luaL_newstate().
     pub unsafe fn getallocf(&mut self, ud: *mut *mut libc::c_void) -> Alloc {
-        #[inline(always)];
+        #![inline(always)]
         self.as_extern().getallocf(ud)
     }
 
     /// Changes the allocator function of a given state to `f` with user data
     /// `ud`.
     pub unsafe fn setallocf(&mut self, f: Alloc, ud: *mut libc::c_void) {
-        #[inline(always)];
+        #![inline(always)]
         self.as_extern().setallocf(f, ud)
     }
 
     /// Pop n elements from the stack.
     /// Errors if the stack is smaller than n
     pub fn pop(&mut self, n: i32) {
-        #[inline(always)];
+        #![inline(always)]
         unsafe { self.as_extern().pop(n) }
     }
 
     /// Creates a new empty table and pushes it onto the stack.
     /// It is equivalent to .createtable(0, 0).
     pub fn newtable(&mut self) {
-        #[inline(always)];
+        #![inline(always)]
         unsafe { self.as_extern().newtable() }
     }
 
     /// Sets the C function `f` as the new value of global `name`.
     /// Fails  the task if `name` has interior NULs.
     pub fn register(&mut self, name: &str, f: CFunction) {
-        #[inline(always)];
+        #![inline(always)]
         unsafe { self.as_extern().register(name, f) }
     }
 
     /// Pushes a C function onto the stack.
     pub fn pushcfunction(&mut self, f: CFunction) {
-        #[inline(always)];
+        #![inline(always)]
         unsafe { self.as_extern().pushcfunction(f) }
     }
 
     /// Returns `true` if the value at the given acceptable index is a function
     /// (either C or Lua).
     pub fn isfunction(&mut self, idx: i32) -> bool {
-        #[inline(always)];
+        #![inline(always)]
         unsafe { self.as_extern().isfunction(idx) }
     }
 
     /// Returns `true` if the value at the given acceptable index is a table.
     pub fn istable(&mut self, idx: i32) -> bool {
-        #[inline(always)];
+        #![inline(always)]
         unsafe { self.as_extern().istable(idx) }
     }
 
     /// Returns `true` if the value at the given acceptable index is a light
     /// userdata.
     pub fn islightuserdata(&mut self, idx: i32) -> bool {
-        #[inline(always)];
+        #![inline(always)]
         unsafe { self.as_extern().islightuserdata(idx) }
     }
 
     /// Returns `true` if the value at the given acceptable index is `nil`.
     pub fn isnil(&mut self, idx: i32) -> bool {
-        #[inline(always)];
+        #![inline(always)]
         unsafe { self.as_extern().isnil(idx) }
     }
 
     /// Returns `true` if the value at the given acceptable index has type
     /// boolean.
     pub fn isboolean(&mut self, idx: i32) -> bool {
-        #[inline(always)];
+        #![inline(always)]
         unsafe { self.as_extern().isboolean(idx) }
     }
 
     /// Returns `true` if the value at the given acceptable index is a thread.
     pub fn isthread(&mut self, idx: i32) -> bool {
-        #[inline(always)];
+        #![inline(always)]
         unsafe { self.as_extern().isthread(idx) }
     }
 
     /// Returns `true` if the given acceptable index is not valid.
     pub fn isnone(&mut self, idx: i32) -> bool {
-        #[inline(always)];
+        #![inline(always)]
         unsafe { self.as_extern().isnone(idx) }
     }
 
     /// Returns `true` if the given acceptable index is not valid or if the
     /// value at this index is nil.
     pub fn isnoneornil(&mut self, idx: i32) -> bool {
-        #[inline(always)];
+        #![inline(always)]
         unsafe { self.as_extern().isnoneornil(idx) }
     }
 
     /// Pops a value from the stack and sets it as the new value of global
     /// `name`. Fails the task if `name` has interior NULs.
     pub fn setglobal(&mut self, name: &str) {
-        #[inline(always)];
+        #![inline(always)]
         unsafe { self.as_extern().setglobal(name) }
     }
 
     /// Pushes onto the stack the value of the global `name`.
     /// Fails the task if `name` has interior NULs.
     pub fn getglobal(&mut self, name: &str) {
-        #[inline(always)];
+        #![inline(always)]
         unsafe { self.as_extern().getglobal(name) }
     }
 }
@@ -1614,12 +1614,12 @@ impl<'l> ExternState<'l> {
 #[allow(missing_doc)]
 impl<'l> RawState<'l> {
     pub unsafe fn newthread(&mut self) -> State {
-        #[inline];
+        #![inline]
         cast::transmute(ExternState::from_lua_State(raw::lua_newthread(self.L)))
     }
 
     pub unsafe fn atpanic(&mut self, panicf: CFunction) -> CFunction {
-        #[inline];
+        #![inline]
         raw::lua_atpanic(self.L, panicf)
     }
 
@@ -1657,37 +1657,37 @@ impl<'l> RawState<'l> {
     }
 
     pub fn gettop(&mut self) -> i32 {
-        #[inline];
+        #![inline]
         unsafe { raw::lua_gettop(self.L) as i32 }
     }
 
     pub unsafe fn settop(&mut self, idx: i32) {
-        #[inline];
+        #![inline]
         raw::lua_settop(self.L, idx as c_int)
     }
 
     pub unsafe fn pushvalue(&mut self, idx: i32) {
-        #[inline];
+        #![inline]
         raw::lua_pushvalue(self.L, idx as c_int)
     }
 
     pub unsafe fn remove(&mut self, idx: i32) {
-        #[inline];
+        #![inline]
         raw::lua_remove(self.L, idx as c_int)
     }
 
     pub unsafe fn insert(&mut self, idx: i32) {
-        #[inline];
+        #![inline]
         raw::lua_insert(self.L, idx as c_int)
     }
 
     pub unsafe fn replace(&mut self, idx: i32) {
-        #[inline];
+        #![inline]
         raw::lua_replace(self.L, idx as c_int)
     }
 
     pub unsafe fn checkstack(&mut self, extra: i32) -> bool {
-        #[inline];
+        #![inline]
         let top = self.gettop();
         if top + extra > self.stackspace {
             if raw::lua_checkstack(self.L, extra as c_int) != 0 {
@@ -1702,37 +1702,37 @@ impl<'l> RawState<'l> {
     }
 
     pub unsafe fn checkstack_(&mut self, extra: i32) {
-        #[inline];
+        #![inline]
         luaassert!(self, self.checkstack(extra), "checkstack: cannot grow stack")
     }
 
     pub unsafe fn xmove(&mut self, to: &mut RawState, n: i32) {
-        #[inline];
+        #![inline]
         raw::lua_xmove(self.L, to.L, n as c_int)
     }
 
     pub unsafe fn isnumber(&mut self, idx: i32) -> bool {
-        #[inline];
+        #![inline]
         raw::lua_isnumber(self.L, idx as c_int) != 0
     }
 
     pub unsafe fn isstring(&mut self, idx: i32) -> bool {
-        #[inline];
+        #![inline]
         raw::lua_isstring(self.L, idx as c_int) != 0
     }
 
     pub unsafe fn iscfunction(&mut self, idx: i32) -> bool {
-        #[inline];
+        #![inline]
         raw::lua_iscfunction(self.L, idx as c_int) != 0
     }
 
     pub unsafe fn isuserdata(&mut self, idx: i32) -> bool {
-        #[inline];
+        #![inline]
         raw::lua_isuserdata(self.L, idx as c_int) != 0
     }
 
     pub unsafe fn type_(&mut self, idx: i32) -> Option<Type> {
-        #[inline];
+        #![inline]
         match raw::lua_type(self.L, idx as c_int) {
             raw::LUA_TNONE => None,
 
@@ -1751,52 +1751,52 @@ impl<'l> RawState<'l> {
     }
 
     pub unsafe fn typename(&mut self, idx: i32) -> &'static str {
-        #[inline];
+        #![inline]
         let s = aux::raw::luaL_typename(self.L, idx as c_int);
         str::raw::c_str_to_static_slice(s)
     }
 
     pub unsafe fn equal(&mut self, index1: i32, index2: i32) -> bool {
-        #[inline];
+        #![inline]
         raw::lua_equal(self.L, index1 as c_int, index2 as c_int) != 0
     }
 
     pub unsafe fn rawequal(&mut self, index1: i32, index2: i32) -> bool {
-        #[inline];
+        #![inline]
         raw::lua_rawequal(self.L, index1 as c_int, index2 as c_int) != 0
     }
 
     pub unsafe fn lessthan(&mut self, index1: i32, index2: i32) -> bool {
-        #[inline];
+        #![inline]
         raw::lua_lessthan(self.L, index1 as c_int, index2 as c_int) != 0
     }
 
     pub unsafe fn tonumber(&mut self, idx: i32) -> f64 {
-        #[inline];
+        #![inline]
         raw::lua_tonumber(self.L, idx as c_int) as f64
     }
 
     pub unsafe fn tointeger(&mut self, idx: i32) -> int {
-        #[inline];
+        #![inline]
         raw::lua_tointeger(self.L, idx as c_int) as int
     }
 
     pub unsafe fn toboolean(&mut self, idx: i32) -> bool {
-        #[inline];
+        #![inline]
         raw::lua_toboolean(self.L, idx as c_int) != 0
     }
 
     /// Note: the string is returned as 'static to prevent borrowing the
     /// RawState, but its lifetime is actually that of the value on the stack.
     pub unsafe fn tostring(&mut self, idx: i32) -> Option<&'static str> {
-        #[inline];
+        #![inline]
         self.tobytes(idx).and_then(|v| str::from_utf8(v))
     }
 
     /// Note: the byte vector is returned as 'static to prevent borrowing the
     /// RawState, but its lifetime is actually that of hte value on the stack.
     pub unsafe fn tobytes(&mut self, idx: i32) -> Option<&'static [u8]> {
-        #[inline];
+        #![inline]
         let mut sz: libc::size_t = 0;
         let s = raw::lua_tolstring(self.L, idx, &mut sz);
         if s.is_null() {
@@ -1809,22 +1809,22 @@ impl<'l> RawState<'l> {
     }
 
     pub unsafe fn objlen(&mut self, idx: i32) -> uint {
-        #[inline];
+        #![inline]
         raw::lua_objlen(self.L, idx as c_int) as uint
     }
 
     pub unsafe fn tocfunction(&mut self, idx: i32) -> Option<CFunction> {
-        #[inline];
+        #![inline]
         raw::lua_tocfunction(self.L, idx as c_int)
     }
 
     pub unsafe fn touserdata(&mut self, idx: i32) -> *mut libc::c_void {
-        #[inline];
+        #![inline]
         raw::lua_touserdata(self.L, idx as c_int)
     }
 
     pub unsafe fn tothread(&mut self, idx: i32) -> Option<ExternState> {
-        #[inline];
+        #![inline]
         let s = raw::lua_tothread(self.L, idx as c_int);
         if s.is_null() {
             None
@@ -1834,128 +1834,128 @@ impl<'l> RawState<'l> {
     }
 
     pub unsafe fn topointer(&mut self, idx: i32) -> *libc::c_void {
-        #[inline];
+        #![inline]
         raw::lua_topointer(self.L, idx as c_int)
     }
 
     pub unsafe fn pushnil(&mut self) {
-        #[inline];
+        #![inline]
         raw::lua_pushnil(self.L)
     }
 
     pub unsafe fn pushnumber(&mut self, n: f64) {
-        #[inline];
+        #![inline]
         raw::lua_pushnumber(self.L, n as raw::lua_Number)
     }
 
     pub unsafe fn pushinteger(&mut self, n: int) {
-        #[inline];
+        #![inline]
         raw::lua_pushinteger(self.L, n as raw::lua_Integer)
     }
 
     pub unsafe fn pushstring(&mut self, s: &str) {
-        #[inline];
+        #![inline]
         raw::lua_pushlstring(self.L, s.as_ptr() as *libc::c_char, s.len() as libc::size_t)
     }
 
     pub unsafe fn pushbytes(&mut self, bytes: &[u8]) {
-        #[inline];
+        #![inline]
         raw::lua_pushlstring(self.L, bytes.as_ptr() as *libc::c_char, bytes.len() as libc::size_t)
     }
 
     pub unsafe fn pushcclosure(&mut self, f: CFunction, n: i32) {
-        #[inline];
+        #![inline]
         raw::lua_pushcclosure(self.L, f, n as c_int)
     }
 
     pub unsafe fn pushboolean(&mut self, b: bool) {
-        #[inline];
+        #![inline]
         raw::lua_pushboolean(self.L, b as c_int)
     }
 
     pub unsafe fn pushlightuserdata(&mut self, p: *mut libc::c_void) {
-        #[inline];
+        #![inline]
         raw::lua_pushlightuserdata(self.L, p)
     }
 
     pub unsafe fn pushthread(&mut self) -> bool {
-        #[inline];
+        #![inline]
         raw::lua_pushthread(self.L) != 0
     }
 
     pub unsafe fn gettable(&mut self, idx: i32) {
-        #[inline];
+        #![inline]
         raw::lua_gettable(self.L, idx as c_int)
     }
 
     pub unsafe fn getfield(&mut self, idx: i32, k: &str) {
-        #[inline];
+        #![inline]
         k.with_c_str(|s| raw::lua_getfield(self.L, idx as c_int, s))
     }
 
     pub unsafe fn rawget(&mut self, idx: i32) {
-        #[inline];
+        #![inline]
         raw::lua_rawget(self.L, idx as c_int)
     }
 
     pub unsafe fn rawgeti(&mut self, idx: i32, n: i32) {
-        #[inline];
+        #![inline]
         raw::lua_rawgeti(self.L, idx as c_int, n as c_int)
     }
 
     pub unsafe fn createtable(&mut self, narr: i32, nrec: i32) {
-        #[inline];
+        #![inline]
         raw::lua_createtable(self.L, narr as c_int, nrec as c_int)
     }
 
     pub unsafe fn newuserdata(&mut self, size: uint) -> *mut libc::c_void {
-        #[inline];
+        #![inline]
         raw::lua_newuserdata(self.L, size as libc::size_t)
     }
 
     pub unsafe fn getmetatable(&mut self, idx: i32) -> bool {
-        #[inline];
+        #![inline]
         raw::lua_getmetatable(self.L, idx as c_int) != 0
     }
 
     pub unsafe fn getfenv(&mut self, idx: i32) {
-        #[inline];
+        #![inline]
         raw::lua_getfenv(self.L, idx as c_int)
     }
 
     pub unsafe fn settable(&mut self, idx: i32) {
-        #[inline];
+        #![inline]
         raw::lua_settable(self.L, idx as c_int)
     }
 
     pub unsafe fn setfield(&mut self, idx: i32, k: &str) {
-        #[inline];
+        #![inline]
         k.with_c_str(|kp| raw::lua_setfield(self.L, idx as c_int, kp))
     }
 
     pub unsafe fn rawset(&mut self, idx: i32) {
-        #[inline];
+        #![inline]
         raw::lua_rawset(self.L, idx as c_int)
     }
 
     pub unsafe fn rawseti(&mut self, idx: i32, n: i32) {
-        #[inline];
+        #![inline]
         raw::lua_rawseti(self.L, idx as c_int, n as c_int)
     }
 
     pub unsafe fn setmetatable(&mut self, idx: i32) {
-        #[inline];
+        #![inline]
         // ignore return value of lua_setmetatable(), it appears to always be 1
         raw::lua_setmetatable(self.L, idx as c_int);
     }
 
     pub unsafe fn setfenv(&mut self, idx: i32) -> bool {
-        #[inline];
+        #![inline]
         raw::lua_setfenv(self.L, idx as c_int) != 0
     }
 
     pub unsafe fn call(&mut self, nargs: i32, nresults: i32) {
-        #[inline];
+        #![inline]
         raw::lua_call(self.L, nargs as c_int, nresults as c_int)
     }
 
@@ -1980,7 +1980,7 @@ impl<'l> RawState<'l> {
     }
 
     pub unsafe fn dump(&mut self, writer: Writer, data: *mut libc::c_void) -> Result<(),i32> {
-        #[inline];
+        #![inline]
         match raw::lua_dump(self.L, writer, data) {
             0 => Ok(()),
             i => Err(i)
@@ -1988,12 +1988,12 @@ impl<'l> RawState<'l> {
     }
 
     pub unsafe fn yield_(&mut self, nresults: i32) -> c_int {
-        #[inline];
+        #![inline]
         raw::lua_yield(self.L, nresults as c_int)
     }
 
     pub unsafe fn resume(&mut self, narg: i32) -> Result<bool,PCallError> {
-        #[inline];
+        #![inline]
         match raw::lua_resume(self.L, narg as c_int) {
             raw::LUA_YIELD => Ok(false),
             0 => Ok(true),
@@ -2004,7 +2004,7 @@ impl<'l> RawState<'l> {
     }
 
     pub unsafe fn status(&mut self) -> Result<bool,PCallError> {
-        #[inline];
+        #![inline]
         match raw::lua_status(self.L) {
             raw::LUA_YIELD => Ok(false),
             0 => Ok(true),
@@ -2015,103 +2015,103 @@ impl<'l> RawState<'l> {
     }
 
     pub unsafe fn gc(&mut self, what: GC, data: i32) -> i32 {
-        #[inline];
+        #![inline]
         raw::lua_gc(self.L, what as c_int, data as c_int) as i32
     }
 
     pub unsafe fn error(&mut self) -> ! {
-        #[inline];
+        #![inline]
         raw::lua_error(self.L);
         unreachable!()
     }
 
     pub unsafe fn next(&mut self, idx: i32) -> bool {
-        #[inline];
+        #![inline]
         raw::lua_next(self.L, idx as c_int) != 0
     }
 
     pub unsafe fn concat(&mut self, n: i32) {
-        #[inline];
+        #![inline]
         raw::lua_concat(self.L, n as c_int)
     }
 
     pub unsafe fn getallocf(&mut self, ud: *mut *mut libc::c_void) -> Alloc {
-        #[inline];
+        #![inline]
         raw::lua_getallocf(self.L, ud)
     }
 
     pub unsafe fn setallocf(&mut self, f: Alloc, ud: *mut libc::c_void) {
-        #[inline];
+        #![inline]
         raw::lua_setallocf(self.L, f, ud)
     }
 
     pub unsafe fn pop(&mut self, n: i32) {
-        #[inline];
+        #![inline]
         raw::lua_pop(self.L, n as c_int)
     }
 
     pub unsafe fn newtable(&mut self) {
-        #[inline];
+        #![inline]
         raw::lua_newtable(self.L)
     }
 
     pub unsafe fn register(&mut self, name: &str, f: CFunction) {
-        #[inline];
+        #![inline]
         name.with_c_str(|s| raw::lua_register(self.L, s, f) )
     }
 
     pub unsafe fn pushcfunction(&mut self, f: CFunction) {
-        #[inline];
+        #![inline]
         raw::lua_pushcfunction(self.L, f)
     }
 
     pub unsafe fn isfunction(&mut self, idx: i32) -> bool {
-        #[inline];
+        #![inline]
         raw::lua_isfunction(self.L, idx as c_int)
     }
 
     pub unsafe fn istable(&mut self, idx: i32) -> bool {
-        #[inline];
+        #![inline]
         raw::lua_istable(self.L, idx as c_int)
     }
 
     pub unsafe fn islightuserdata(&mut self, idx: i32) -> bool {
-        #[inline];
+        #![inline]
         raw::lua_islightuserdata(self.L, idx)
     }
 
     pub unsafe fn isnil(&mut self, idx: i32) -> bool {
-        #[inline];
+        #![inline]
         raw::lua_isnil(self.L, idx)
     }
 
     pub unsafe fn isboolean(&mut self, idx: i32) -> bool {
-        #[inline];
+        #![inline]
         raw::lua_isboolean(self.L, idx)
     }
 
     pub unsafe fn isthread(&mut self, idx: i32) -> bool {
-        #[inline];
+        #![inline]
         raw::lua_isthread(self.L, idx)
     }
 
     pub unsafe fn isnone(&mut self, idx: i32) -> bool {
-        #[inline];
+        #![inline]
         raw::lua_isnone(self.L, idx)
     }
 
     pub unsafe fn isnoneornil(&mut self, idx: i32) -> bool {
-        #[inline];
+        #![inline]
         raw::lua_isnoneornil(self.L, idx)
     }
 
     pub unsafe fn setglobal(&mut self, name: &str) {
-        #[inline];
+        #![inline]
         name.with_c_str(|s| raw::lua_setglobal(self.L, s))
     }
 
     pub unsafe fn getglobal(&mut self, name: &str) {
-        #[inline];
+        #![inline]
         name.with_c_str(|s| raw::lua_getglobal(self.L, s))
     }
 }
@@ -2137,55 +2137,55 @@ pub static LOADLIBNAME: &'static str = lib::raw::LUA_LOADLIBNAME;
 impl State {
     /// Open the basic library.
     pub fn open_base(&mut self) {
-        #[inline(always)];
+        #![inline(always)]
         unsafe { self.as_extern().open_base() }
     }
 
     /// Opens the table library.
     pub fn open_table(&mut self) {
-        #[inline(always)];
+        #![inline(always)]
         unsafe { self.as_extern().open_table() }
     }
 
     /// Opens the io library.
     pub fn open_io(&mut self) {
-        #[inline(always)];
+        #![inline(always)]
         unsafe { self.as_extern().open_io() }
     }
 
     /// Opens the os library.
     pub fn open_os(&mut self) {
-        #[inline(always)];
+        #![inline(always)]
         unsafe { self.as_extern().open_os() }
     }
 
     /// Opens the string library.
     pub fn open_string(&mut self) {
-        #[inline(always)];
+        #![inline(always)]
         unsafe { self.as_extern().open_string() }
     }
 
     /// Opens the math library.
     pub fn open_math(&mut self) {
-        #[inline(always)];
+        #![inline(always)]
         unsafe { self.as_extern().open_math() }
     }
 
     /// Opens the debug library.
     pub fn open_debug(&mut self) {
-        #[inline(always)];
+        #![inline(always)]
         unsafe { self.as_extern().open_debug() }
     }
 
     /// Opens the package library.
     pub fn open_package(&mut self) {
-        #[inline(always)];
+        #![inline(always)]
         unsafe { self.as_extern().open_package() }
     }
 
     /// Opens all standard Lua libraries.
     pub fn openlibs(&mut self) {
-        #[inline(always)];
+        #![inline(always)]
         unsafe { self.as_extern().openlibs() }
     }
 }
@@ -2241,63 +2241,63 @@ impl<'l> ExternState<'l> {
 #[allow(missing_doc)]
 impl<'l> RawState<'l> {
     pub unsafe fn open_base(&mut self) {
-        #[inline];
+        #![inline]
         self.pushcfunction(lib::raw::luaopen_base);
         self.pushstring("");
         self.call(1, 0);
     }
 
     pub unsafe fn open_table(&mut self) {
-        #[inline];
+        #![inline]
         self.pushcfunction(lib::raw::luaopen_table);
         self.pushstring(TABLIBNAME);
         self.call(1, 0);
     }
 
     pub unsafe fn open_io(&mut self) {
-        #[inline];
+        #![inline]
         self.pushcfunction(lib::raw::luaopen_io);
         self.pushstring(IOLIBNAME);
         self.call(1, 0);
     }
 
     pub unsafe fn open_os(&mut self) {
-        #[inline];
+        #![inline]
         self.pushcfunction(lib::raw::luaopen_os);
         self.pushstring(OSLIBNAME);
         self.call(1, 0);
     }
 
     pub unsafe fn open_string(&mut self) {
-        #[inline];
+        #![inline]
         self.pushcfunction(lib::raw::luaopen_string);
         self.pushstring(STRLIBNAME);
         self.call(1, 0);
     }
 
     pub unsafe fn open_math(&mut self) {
-        #[inline];
+        #![inline]
         self.pushcfunction(lib::raw::luaopen_math);
         self.pushstring(MATHLIBNAME);
         self.call(1, 0);
     }
 
     pub unsafe fn open_debug(&mut self) {
-        #[inline];
+        #![inline]
         self.pushcfunction(lib::raw::luaopen_debug);
         self.pushstring(DBLIBNAME);
         self.call(1, 0);
     }
 
     pub unsafe fn open_package(&mut self) {
-        #[inline];
+        #![inline]
         self.pushcfunction(lib::raw::luaopen_package);
         self.pushstring(LOADLIBNAME);
         self.call(1, 0);
     }
 
     pub unsafe fn openlibs(&mut self) {
-        #[inline];
+        #![inline]
         lib::raw::luaL_openlibs(self.L)
     }
 }
@@ -2321,7 +2321,7 @@ impl State {
     ///
     /// In any case the function leaves the table on the top of the stack.
     pub fn registerlib(&mut self, libname: Option<&str>, l: &[(&str,CFunction)]) {
-        #[inline(always)];
+        #![inline(always)]
         unsafe { self.as_extern().registerlib(libname, l) }
     }
 
@@ -2329,7 +2329,7 @@ impl State {
     /// index `obj`. If the object does not have a metatable, or if the
     /// metatable does not have this field, returns `false` and pushes nothing.
     pub fn getmetafield(&mut self, obj: i32, e: &str) -> bool {
-        #[inline(always)];
+        #![inline(always)]
         unsafe { self.as_extern().getmetafield(obj, e) }
     }
 
@@ -2342,7 +2342,7 @@ impl State {
     /// no metamethod, this method returns `false` (without pushing any value
     /// on the stack).
     pub fn callmeta(&mut self, obj: i32, e: &str) -> bool {
-        #[inline(always)];
+        #![inline(always)]
         unsafe { self.as_extern().callmeta(obj, e) }
     }
 
@@ -2353,7 +2353,7 @@ impl State {
     /// where `location` is produced by where(), `func` is the name of the
     /// current function, and `rt` is the type name of the actual argument.
     pub fn typerror(&mut self, narg: i32, tname: &str) -> ! {
-        #[inline(always)];
+        #![inline(always)]
         unsafe { self.as_extern().typerror(narg, tname) }
     }
 
@@ -2362,7 +2362,7 @@ impl State {
     ///
     ///   bad argument #<narg> to <func> (<extramsg>)
     pub fn argerror(&mut self, narg: i32, extramsg: &str) -> ! {
-        #[inline(always)];
+        #![inline(always)]
         unsafe { self.as_extern().argerror(narg, extramsg) }
     }
 
@@ -2372,14 +2372,14 @@ impl State {
     ///
     /// If the string is not utf-8, returns None.
     pub fn checkstring<'a>(&'a mut self, narg: i32) -> Option<&'a str> {
-        #[inline(always)];
+        #![inline(always)]
         unsafe { cast::transmute(self.as_extern().checkstring(narg)) }
     }
 
     /// Checks whether the function argument `narg` is a lua string, and
     /// returns it as a byte vector. See checkstring() for caveats.
     pub fn checkbytes<'a>(&'a mut self, narg: i32) -> &'a [u8] {
-        #[inline(always)];
+        #![inline(always)]
         unsafe { cast::transmute(self.as_extern().checkbytes(narg)) }
     }
 
@@ -2389,7 +2389,7 @@ impl State {
     ///
     /// If the argument is a string, but is not utf-8, returns None.
     pub fn optstring<'a>(&'a mut self, narg: i32, d: &'a str) -> Option<&'a str> {
-        #[inline(always)];
+        #![inline(always)]
         unsafe {
             let d = cast::transmute::<&'a str, &'static str>(d);
             cast::transmute(self.as_extern().optstring(narg, d))
@@ -2399,7 +2399,7 @@ impl State {
     /// If the function argument `narg` is a lua string, returns this string
     /// asa byte vector.  See optstring() for more information.
     pub fn optbytes<'a>(&'a mut self, narg: i32, d: &'a [u8]) -> &'a [u8] {
-        #[inline(always)];
+        #![inline(always)]
         unsafe {
             let d = cast::transmute::<&'a [u8], &'static [u8]>(d);
             cast::transmute(self.as_extern().optbytes(narg, d))
@@ -2409,7 +2409,7 @@ impl State {
     /// Checks whether the function argument `narg` is a number and returns the
     /// number.
     pub fn checknumber(&mut self, narg: i32) -> f64 {
-        #[inline(always)];
+        #![inline(always)]
         unsafe { self.as_extern().checknumber(narg) }
     }
 
@@ -2417,14 +2417,14 @@ impl State {
     /// the argument is absent or is nil, returns `d`. Otherwise, throws an
     /// error.
     pub fn optnumber(&mut self, narg: i32, d: f64) -> f64 {
-        #[inline(always)];
+        #![inline(always)]
         unsafe { self.as_extern().optnumber(narg, d) }
     }
 
     /// Checks whether the function argument `narg` is a number and returns it
     /// as an int.
     pub fn checkinteger(&mut self, narg: i32) -> int {
-        #[inline(always)];
+        #![inline(always)]
         unsafe { self.as_extern().checkinteger(narg) }
     }
 
@@ -2432,20 +2432,20 @@ impl State {
     /// to an int. If this argument is absent or nil, returns `d`. Otherwise,
     /// raises an error.
     pub fn optinteger(&mut self, narg: i32, d: int) -> int {
-        #[inline(always)];
+        #![inline(always)]
         unsafe { self.as_extern().optinteger(narg, d) }
     }
 
     /// Checks whether the function argument `narg` has type `t`.
     pub fn checktype(&mut self, narg: i32, t: Type) {
-        #[inline(always)];
+        #![inline(always)]
         unsafe { self.as_extern().checktype(narg, t) }
     }
 
     /// Checks whether the function has an argument of any type (including nil)
     /// at position `narg`.
     pub fn checkany(&mut self, narg: i32) {
-        #[inline(always)];
+        #![inline(always)]
         unsafe { self.as_extern().checkany(narg) }
     }
 
@@ -2456,14 +2456,14 @@ impl State {
     /// In both cases pushes onto the stack the final value associated with
     /// `tname` in the registry.
     pub fn newmetatable(&mut self, tname: &str) -> bool {
-        #[inline(always)];
+        #![inline(always)]
         unsafe { self.as_extern().newmetatable(tname) }
     }
 
     /// Checks whether the function argument `narg` is a userdata of the type
     /// `tname` (see newmetatable()). The userdata pointer is returned.
     pub fn checkudata(&mut self, narg: i32, tname: &str) -> *mut libc::c_void {
-        #[inline(always)];
+        #![inline(always)]
         unsafe { self.as_extern().checkudata(narg, tname) }
     }
 
@@ -2472,7 +2472,7 @@ impl State {
     /// Level 0 is the running function, level 1 is the function that called
     /// the running function, etc.
     pub fn where(&mut self, lvl: i32) {
-        #[inline(always)];
+        #![inline(always)]
         unsafe { self.as_extern().where(lvl) }
     }
 
@@ -2480,7 +2480,7 @@ impl State {
     /// It also adds at the beginning of the message the file name and line
     /// number where the error occurred, if this information is available.
     pub fn errorstr(&mut self, s: &str) -> ! {
-        #[inline(always)];
+        #![inline(always)]
         unsafe { self.as_extern().errorstr(s) }
     }
 
@@ -2496,7 +2496,7 @@ impl State {
     /// Fails the task if `def` or any list key has interior NULs
     pub fn checkoption<'a, T>(&mut self, narg: i32, def: Option<&str>, lst: &'a [(&str,T)])
                              -> &'a T {
-        #[inline(always)];
+        #![inline(always)]
         unsafe { self.as_extern().checkoption(narg, def, lst) }
     }
 
@@ -2513,7 +2513,7 @@ impl State {
     /// constant RefNil. The constant NoRef is guaranteed to be different from
     /// any reference returned by ref_().
     pub fn ref_(&mut self, t: i32) -> i32 {
-        #[inline(always)];
+        #![inline(always)]
         unsafe { self.as_extern().ref_(t) }
     }
 
@@ -2523,7 +2523,7 @@ impl State {
     ///
     /// If ref is NoRef or RefNil, unref() does nothing.
     pub fn unref(&mut self, t: i32, r: i32) {
-        #[inline(always)];
+        #![inline(always)]
         unsafe { self.as_extern().unref(t, r) }
     }
 
@@ -2531,7 +2531,7 @@ impl State {
     /// If the `filename` is None, this loads from standard input.
     /// Fails the task if `filename` has any interior NULs.
     pub fn loadfile(&mut self, filename: Option<&path::Path>) -> Result<(),LoadFileError> {
-        #[inline(always)];
+        #![inline(always)]
         unsafe { self.as_extern().loadfile(filename) }
     }
 
@@ -2541,14 +2541,14 @@ impl State {
     /// expect Lua won't like those.
     /// Fails the task if `name` has any interior NULs.
     pub fn loadbuffer(&mut self, buf: &str, name: &str) -> Result<(),LoadError> {
-        #[inline(always)];
+        #![inline(always)]
         unsafe { self.as_extern().loadbuffer(buf, name) }
     }
 
     /// Loads a string as a Lua chunk (but does not run it).
     /// Fails the task if `s` has any interior NULs.
     pub fn loadstring(&mut self, s: &str) -> Result<(),LoadError> {
-        #[inline(always)];
+        #![inline(always)]
         unsafe { self.as_extern().loadstring(s) }
     }
 
@@ -2556,7 +2556,7 @@ impl State {
     /// `p` with the string `r`. Pushes the resulting string on the stack and
     /// returns it.
     pub fn gsub<'a>(&'a mut self, s: &str, p: &str, r: &str) -> &'a str {
-        #[inline(always)];
+        #![inline(always)]
         unsafe { cast::transmute(self.as_extern().gsub(s, p, r)) }
     }
 
@@ -2567,34 +2567,34 @@ impl State {
     ///
     /// Fails the task if `extramsg` has interior NULs.
     pub fn argcheck(&mut self, cond: bool, narg: i32, extramsg: &str) {
-        #[inline(always)];
+        #![inline(always)]
         unsafe { self.as_extern().argcheck(cond, narg, extramsg) }
     }
 
     /// Loads and runs the given file. It returns `true` if there are no errors
     /// or `false` in case of errors.
     pub fn dofile(&mut self, filename: Option<&path::Path>) -> bool {
-        #[inline(always)];
+        #![inline(always)]
         unsafe { self.as_extern().dofile(filename) }
     }
 
     /// Loads and runs the given string. It returns `true` if there are no
     /// errors or `false` in case of errors.
     pub fn dostring(&mut self, s: &str) -> bool {
-        #[inline(always)];
+        #![inline(always)]
         unsafe { self.as_extern().dostring(s) }
     }
 
     /// Pushes onto the stack the metatable associated with the name `tname` in
     /// the registry (see newmetatable()).
     pub fn getmetatable_reg(&mut self, tname: &str) {
-        #[inline(always)];
+        #![inline(always)]
         unsafe { self.as_extern().getmetatable_reg(tname) }
     }
 
     /// Initializes and returns a Buffer
     pub fn buffinit<'a>(&'a mut self) -> Buffer<'a> {
-        #[inline(always)];
+        #![inline(always)]
         self.as_extern().buffinit()
     }
 }
@@ -2773,7 +2773,7 @@ impl<'l> ExternState<'l> {
     }
 
     pub fn buffinit<'a>(&'a mut self) -> Buffer<'a> {
-        #[inline];
+        #![inline]
         let mut B = aux::raw::luaL_Buffer{
             p: ptr::mut_null(),
             lvl: 0,
@@ -2788,7 +2788,7 @@ impl<'l> ExternState<'l> {
 #[allow(missing_doc)]
 impl<'l> RawState<'l> {
     pub unsafe fn registerlib(&mut self, libname: Option<&str>, l: &[(&str,CFunction)]) {
-        #[inline];
+        #![inline]
         let mut cstrs = Vec::with_capacity(l.len());
         let mut l_ = Vec::with_capacity(l.len()+1);
         for &(name, func) in l.iter() {
@@ -2803,23 +2803,23 @@ impl<'l> RawState<'l> {
     }
 
     pub unsafe fn getmetafield(&mut self, obj: i32, e: &str) -> bool {
-        #[inline];
+        #![inline]
         e.with_c_str(|e| aux::raw::luaL_getmetafield(self.L, obj as c_int, e)) != 0
     }
 
     pub unsafe fn callmeta(&mut self, obj: i32, e: &str) -> bool {
-        #[inline];
+        #![inline]
         e.with_c_str(|e| aux::raw::luaL_callmeta(self.L, obj as c_int, e)) != 0
     }
 
     pub unsafe fn typerror(&mut self, narg: i32, tname: &str) -> ! {
-        #[inline];
+        #![inline]
         tname.with_c_str(|tname| aux::raw::luaL_typerror(self.L, narg as c_int, tname));
         unreachable!()
     }
 
     pub unsafe fn argerror(&mut self, narg: i32, extramsg: &str) -> ! {
-        #[inline];
+        #![inline]
         extramsg.with_c_str(|msg| {
             aux::raw::luaL_argerror(self.L, narg as c_int, msg);
             unreachable!()
@@ -2829,14 +2829,14 @@ impl<'l> RawState<'l> {
     /// Note: the string is returned as 'static to prevent borrowing the
     /// RawState, but its lifetime is actually that of the value on the stack.
     pub unsafe fn checkstring(&mut self, narg: i32) -> Option<&'static str> {
-        #[inline];
+        #![inline]
         str::from_utf8(self.checkbytes(narg))
     }
 
     /// Note: the byte vector is returned as 'static to prevent borrowing the
     /// RawState, but its lifetime is actually that of hte value on the stack.
     pub unsafe fn checkbytes(&mut self, narg: i32) -> &'static [u8] {
-        #[inline];
+        #![inline]
         let mut sz: libc::size_t = 0;
         let s = aux::raw::luaL_checklstring(self.L, narg, &mut sz);
         slice::raw::buf_as_slice(s as *u8, sz as uint, |b| {
@@ -2847,14 +2847,14 @@ impl<'l> RawState<'l> {
     /// Note: the string is returned as 'static to prevent borrowing the
     /// RawState, but its lifetime is actually that of the value on the stack.
     pub unsafe fn optstring(&mut self, narg: i32, d: &'static str) -> Option<&'static str> {
-        #[inline];
+        #![inline]
         str::from_utf8(self.optbytes(narg, d.as_bytes()))
     }
 
     /// Note: the byte vector is returned as 'static to prevent borrowing the
     /// RawState, but its lifetime is actually that of hte value on the stack.
     pub unsafe fn optbytes(&mut self, narg: i32, d: &'static [u8]) -> &'static [u8] {
-        #[inline];
+        #![inline]
         let mut sz: libc::size_t = 0;
         let s = d.with_c_str(|d| aux::raw::luaL_optlstring(self.L, narg, d, &mut sz));
         slice::raw::buf_as_slice(s as *u8, sz as uint, |b| {
@@ -2863,52 +2863,52 @@ impl<'l> RawState<'l> {
     }
 
     pub unsafe fn checknumber(&mut self, narg: i32) -> f64 {
-        #[inline];
+        #![inline]
         aux::raw::luaL_checknumber(self.L, narg as c_int) as f64
     }
 
     pub unsafe fn optnumber(&mut self, narg: i32, d: f64) -> f64 {
-        #[inline];
+        #![inline]
         aux::raw::luaL_optnumber(self.L, narg as c_int, d as raw::lua_Number) as f64
     }
 
     pub unsafe fn checkinteger(&mut self, narg: i32) -> int {
-        #[inline];
+        #![inline]
         aux::raw::luaL_checkinteger(self.L, narg as c_int) as int
     }
 
     pub unsafe fn optinteger(&mut self, narg: i32, d: int) -> int {
-        #[inline];
+        #![inline]
         aux::raw::luaL_optinteger(self.L, narg as c_int, d as raw::lua_Integer) as int
     }
 
     pub unsafe fn checktype(&mut self, narg: i32, t: Type) {
-        #[inline];
+        #![inline]
         aux::raw::luaL_checktype(self.L, narg as c_int, t as c_int)
     }
 
     pub unsafe fn checkany(&mut self, narg: i32) {
-        #[inline];
+        #![inline]
         aux::raw::luaL_checkany(self.L, narg as c_int)
     }
 
     pub unsafe fn newmetatable(&mut self, tname: &str) -> bool {
-        #[inline];
+        #![inline]
         tname.with_c_str(|tname| aux::raw::luaL_newmetatable(self.L, tname)) != 0
     }
 
     pub unsafe fn checkudata(&mut self, narg: i32, tname: &str) -> *mut libc::c_void {
-        #[inline];
+        #![inline]
         tname.with_c_str(|tname| aux::raw::luaL_checkudata(self.L, narg as c_int, tname))
     }
 
     pub unsafe fn where(&mut self, lvl: i32) {
-        #[inline];
+        #![inline]
         aux::raw::luaL_where(self.L, lvl as c_int)
     }
 
     pub unsafe fn errorstr(&mut self, s: &str) -> ! {
-        #[inline];
+        #![inline]
         self.where(1);
         self.pushstring(s);
         self.concat(2);
@@ -2934,17 +2934,17 @@ impl<'l> RawState<'l> {
     }
 
     pub unsafe fn ref_(&mut self, t: i32) -> i32 {
-        #[inline];
+        #![inline]
         aux::raw::luaL_ref(self.L, t as c_int) as i32
     }
 
     pub unsafe fn unref(&mut self, t: i32, r: i32) {
-        #[inline];
+        #![inline]
         aux::raw::luaL_unref(self.L, t as c_int, r as c_int)
     }
 
     pub unsafe fn loadfile(&mut self, filename: Option<&path::Path>) -> Result<(),LoadFileError> {
-        #[inline];
+        #![inline]
         let cstr = filename.map(|p| p.to_c_str());
         let ptr = cstr.as_ref().map_or(ptr::null(), |cstr| cstr.with_ref(|p| p));
         match aux::raw::luaL_loadfile(self.L, ptr) {
@@ -2957,7 +2957,7 @@ impl<'l> RawState<'l> {
     }
 
     pub unsafe fn loadbuffer(&mut self, buf: &str, name: &str) -> Result<(),LoadError> {
-        #[inline];
+        #![inline]
         let bp = buf.as_ptr() as *libc::c_char;
         let bsz = buf.len() as libc::size_t;
         match name.with_c_str(|name| aux::raw::luaL_loadbuffer(self.L, bp, bsz, name)) {
@@ -2969,7 +2969,7 @@ impl<'l> RawState<'l> {
     }
 
     pub unsafe fn loadstring(&mut self, s: &str) -> Result<(),LoadError> {
-        #[inline];
+        #![inline]
         match s.with_c_str(|s| aux::raw::luaL_loadstring(self.L, s)) {
             0 => Ok(()),
             raw::LUA_ERRSYNTAX => Err(LoadError::ErrSyntax),
@@ -2981,7 +2981,7 @@ impl<'l> RawState<'l> {
     /// Note: the string is returned as 'static to prevent borrowing the
     /// RawState, but its lifetime is actually that of the value on the stack.
     pub unsafe fn gsub(&mut self, s: &str, p: &str, r: &str) -> &'static str {
-        #[inline];
+        #![inline]
         let s_ = s.to_c_str();
         let p_ = p.to_c_str();
         let r_ = r.to_c_str();
@@ -2995,26 +2995,26 @@ impl<'l> RawState<'l> {
     }
 
     pub unsafe fn argcheck(&mut self, cond: bool, narg: i32, extramsg: &str) {
-        #[inline];
+        #![inline]
         extramsg.with_c_str(|msg| {
             aux::raw::luaL_argcheck(self.L, cond, narg as c_int, msg)
         })
     }
 
     pub unsafe fn dofile(&mut self, filename: Option<&path::Path>) -> bool {
-        #[inline];
+        #![inline]
         let cstr = filename.map(|p| p.to_c_str());
         let name = cstr.map_or(ptr::null(), |c| c.with_ref(|p| p));
         aux::raw::luaL_dofile(self.L, name) == 0
     }
 
     pub unsafe fn dostring(&mut self, s: &str) -> bool {
-        #[inline];
+        #![inline]
         s.with_c_str(|s| aux::raw::luaL_dostring(self.L, s)) == 0
     }
 
     pub unsafe fn getmetatable_reg(&mut self, tname: &str) {
-        #[inline];
+        #![inline]
         self.getfield(REGISTRYINDEX, tname)
     }
 }
@@ -3037,7 +3037,7 @@ pub static BUFFERSIZE: uint = aux::raw::LUAL_BUFFERSIZE as uint;
 impl<'a> Buffer<'a> {
     /// Adds the byte `c` to the buffer.
     pub unsafe fn addbyte(&mut self, c: u8) {
-        #[inline];
+        #![inline]
         // don't call through to luaL_addchar, because we want to insert a call to checkstack()
         // iff we have to prep the buffer.
         let startp: *mut libc::c_char = &mut self.B.buffer[0];
@@ -3051,7 +3051,7 @@ impl<'a> Buffer<'a> {
 
     /// Adds the char `c` as utf-8 bytes to the buffer.
     pub unsafe fn addchar(&mut self, c: char) {
-        #[inline];
+        #![inline]
         let mut buf = [0u8, ..4];
         let count = c.encode_utf8(buf);
         self.addbytes(buf.slice_to(count));
@@ -3060,7 +3060,7 @@ impl<'a> Buffer<'a> {
     /// Adds to the buffer a string of length `n` previously copied to the
     /// buffer area (see prepbuffer()).
     pub unsafe fn addsize(&mut self, n: uint) {
-        #[inline];
+        #![inline]
         aux::raw::luaL_addsize(&mut self.B, n as libc::size_t)
     }
 
@@ -3069,7 +3069,7 @@ impl<'a> Buffer<'a> {
     /// space you must call addsize() with the size of the string to actually
     /// add it to the buffer.
     pub unsafe fn prepbuffer(&mut self) -> &mut [u8, ..aux::raw::LUAL_BUFFERSIZE] {
-        #[inline];
+        #![inline]
         self.L.checkstack_(1);
         // luaL_prepbuffer ends up returning the buffer field.
         // Rather than unsafely trying to transmute that to the array, just return the field
@@ -3081,13 +3081,13 @@ impl<'a> Buffer<'a> {
 
     /// Adds the string to the buffer.
     pub unsafe fn addstring(&mut self, s: &str) {
-        #[inline];
+        #![inline]
         self.addbytes(s.as_bytes())
     }
 
     /// Adds the byte vector to the buffer.
     pub unsafe fn addbytes(&mut self, bytes: &[u8]) {
-        #[inline];
+        #![inline]
         // luaL_addlstring() just iterates over the string calling addchar().
         // We want our checkstack calls, so let's just do that here instead directly.
         for &b in bytes.iter() {
@@ -3101,7 +3101,7 @@ impl<'a> Buffer<'a> {
     /// with an extra element on the stack, which is the value to be added to
     /// the buffer.
     pub unsafe fn addvalue(&mut self) {
-        #[inline];
+        #![inline]
         luaassert!(self.L, self.L.gettop() >= 1, "addvalue: stack underflow");
         self.L.checkstack_(1); // luaL_addvalue() needs this if the value is too large
         aux::raw::luaL_addvalue(&mut self.B)
@@ -3110,7 +3110,7 @@ impl<'a> Buffer<'a> {
     /// Finishes the use of the buffer, leaving the final string on top of the
     /// stack.
     pub unsafe fn pushresult(mut self) {
-        #[inline];
+        #![inline]
         self.L.checkstack_(1); // possibly needed for the emptybuffer
         aux::raw::luaL_pushresult(&mut self.B)
     }
@@ -3177,7 +3177,7 @@ pub type Debug = raw::lua_Debug;
 impl raw::lua_Debug {
     /// Returns a newly-zeroed instance of Debug
     pub fn new() -> Debug {
-        #[inline];
+        #![inline]
         std::default::Default::default()
     }
 }
@@ -3192,7 +3192,7 @@ impl State {
     /// Some(Debug); when called with a level greater than the stack depth, it
     /// returns None.
     pub fn getstack(&mut self, level: i32) -> Option<Debug> {
-        #[inline(always)];
+        #![inline(always)]
         self.as_extern().getstack(level)
     }
 
@@ -3234,7 +3234,7 @@ impl State {
     ///
     /// Fails the task if `what` has interior NULs.
     pub fn getinfo(&mut self, what: &str, ar: &mut Debug) -> bool {
-        #[inline(always)];
+        #![inline(always)]
         unsafe { self.as_extern().getinfo(what, ar) }
     }
 
@@ -3252,7 +3252,7 @@ impl State {
     /// The name is returned as a &[u8] to avoid confusion with failed utf-8
     /// decoding vs invalid indices.
     pub fn getlocal<'a>(&mut self, ar: &'a Debug, n: i32) -> Option<&'a [u8]> {
-        #[inline(always)];
+        #![inline(always)]
         unsafe { self.as_extern().getlocal(ar, n) }
     }
 
@@ -3267,7 +3267,7 @@ impl State {
     /// The name is returned as a &[u8] to avoid confusion with failed utf-8
     /// decoding vs invalid indices.
     pub fn setlocal<'a>(&mut self, ar: &'a mut Debug, n: i32) -> Option<&'a [u8]> {
-        #[inline(always)];
+        #![inline(always)]
         unsafe { self.as_extern().setlocal(ar, n) }
     }
 
@@ -3286,7 +3286,7 @@ impl State {
     /// The name is returned as a &[u8] to avoid confusion with failed utf-8
     /// decoding vs invalid indices.
     pub fn getupvalue<'a>(&'a mut self, funcidx: i32, n: i32) -> Option<&'a [u8]> {
-        #[inline(always)];
+        #![inline(always)]
         unsafe { self.as_extern().getupvalue(funcidx, n) }
     }
 
@@ -3301,7 +3301,7 @@ impl State {
     /// The name is returned as a &[u8] to avoid confusion with failed utf-8
     /// decoding vs invalid indices.
     pub fn setupvalue<'a>(&'a mut self, funcidx: i32, n: i32) -> Option<&'a [u8]> {
-        #[inline(always)];
+        #![inline(always)]
         unsafe { self.as_extern().setupvalue(funcidx, n) }
     }
 
@@ -3314,25 +3314,25 @@ impl State {
     ///
     /// A hook is disabled by setting `mask` to zero.
     pub fn sethook(&mut self, f: Hook, mask: i32, count: i32) {
-        #[inline(always)];
+        #![inline(always)]
         self.as_extern().sethook(f, mask, count)
     }
 
     /// Returns the current hook function
     pub fn gethook(&mut self) -> Hook {
-        #[inline(always)];
+        #![inline(always)]
         self.as_extern().gethook()
     }
 
     /// Returns the current hook mask
     pub fn gethookmask(&mut self) -> i32 {
-        #[inline(always)];
+        #![inline(always)]
         self.as_extern().gethookmask()
     }
 
     /// Returns the current hook count
     pub fn gethookcount(&mut self) -> i32 {
-        #[inline(always)];
+        #![inline(always)]
         self.as_extern().gethookcount()
     }
 }
@@ -3396,7 +3396,7 @@ impl<'l> ExternState<'l> {
 #[allow(missing_doc)]
 impl<'l> RawState<'l> {
     pub fn getstack(&mut self, level: i32) -> Option<Debug> {
-        #[inline];
+        #![inline]
         let mut ar: Debug = std::default::Default::default();
         if unsafe { raw::lua_getstack(self.L, level as c_int, &mut ar) != 0 } {
             Some(ar)
@@ -3406,57 +3406,57 @@ impl<'l> RawState<'l> {
     }
 
     pub unsafe fn getinfo(&mut self, what: &str, ar: &mut Debug) -> bool {
-        #[inline];
+        #![inline]
         what.with_c_str(|w| raw::lua_getinfo(self.L, w, ar)) != 0
     }
 
     pub unsafe fn getlocal<'a>(&mut self, ar: &'a Debug, n: i32) -> Option<&'a [u8]> {
-        #[inline];
+        #![inline]
         let res = raw::lua_getlocal(self.L, ar, n as c_int);
         c_str_to_bytes(res)
     }
 
     pub unsafe fn setlocal<'a>(&mut self, ar: &'a mut Debug, n: i32) -> Option<&'a [u8]> {
-        #[inline];
+        #![inline]
         let res = raw::lua_setlocal(self.L, ar, n as c_int);
         c_str_to_bytes(res)
     }
 
     pub unsafe fn getupvalue<'a>(&'a mut self, funcidx: i32, n: i32) -> Option<&'a [u8]> {
-        #[inline];
+        #![inline]
         let res = raw::lua_getupvalue(self.L, funcidx as c_int, n as c_int);
         c_str_to_bytes(res)
     }
 
     pub unsafe fn setupvalue<'a>(&'a mut self, funcidx: i32, n: i32) -> Option<&'a [u8]> {
-        #[inline];
+        #![inline]
         let res = raw::lua_setupvalue(self.L, funcidx as c_int, n as c_int);
         c_str_to_bytes(res)
     }
 
     pub fn sethook(&mut self, f: Hook, mask: i32, count: i32) {
-        #[inline];
+        #![inline]
         unsafe { raw::lua_sethook(self.L, f, mask as c_int, count as c_int); }
     }
 
     pub fn gethook(&mut self) -> Hook {
-        #[inline];
+        #![inline]
         unsafe { raw::lua_gethook(self.L) }
     }
 
     pub fn gethookmask(&mut self) -> i32 {
-        #[inline];
+        #![inline]
         unsafe { raw::lua_gethookmask(self.L) as i32 }
     }
 
     pub fn gethookcount(&mut self) -> i32 {
-        #[inline];
+        #![inline]
         unsafe { raw::lua_gethookcount(self.L) as i32 }
     }
 }
 
 unsafe fn c_str_to_bytes<'a>(cstr: *libc::c_char) -> Option<&'a [u8]> {
-    #[inline];
+    #![inline]
     if cstr.is_null() {
         None
     } else {
