@@ -271,8 +271,8 @@ pub mod PCallError {
 /// function that is executing in a protected scope. Use ExternState for that.
 #[unsafe_no_drop_flag]
 pub struct State {
-    priv L: *mut raw::lua_State,
-    priv stackspace: i32
+    L: *mut raw::lua_State,
+    stackspace: i32
 }
 
 impl Drop for State {
@@ -294,8 +294,8 @@ impl Drop for State {
 // NB: layout must be identical to State
 #[unsafe_no_drop_flag]
 pub struct ExternState<'a> {
-    priv L: *mut raw::lua_State,
-    priv stackspace: i32
+    L: *mut raw::lua_State,
+    stackspace: i32
 }
 
 /// RawState is a Lua State that represents raw, unchecked access. All
@@ -304,8 +304,8 @@ pub struct ExternState<'a> {
 // NB: layout must be identical to State
 #[unsafe_no_drop_flag]
 pub struct RawState<'a> {
-    priv L: *mut raw::lua_State,
-    priv stackspace: i32
+    L: *mut raw::lua_State,
+    stackspace: i32
 }
 
 // State construction
@@ -3023,12 +3023,12 @@ impl<'l> RawState<'l> {
 ///
 /// The Buffer assumes it needs longjmp safety, like ExternState.
 pub struct Buffer<'a> {
-    priv B: aux::raw::luaL_Buffer,
+    B: aux::raw::luaL_Buffer,
     /// A &mut pointer to the ExternState that created this Buffer.
     /// The buffer internally holds on to the *lua_Buffer that the State wraps,
     /// so to ensure safety it also borrows the &mut ExternState. Use this
     /// field to get mutable access to the State while the buffer is alive.
-    L: &'a mut ExternState<'a>
+    pub L: &'a mut ExternState<'a>
 }
 
 /// Size of the internal buffer used by Buffer and returned by prepbuffer()
