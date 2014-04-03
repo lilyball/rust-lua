@@ -2929,7 +2929,7 @@ impl<'l> RawState<'l> {
             lstv.push(p);
         }
         lstv.push(ptr::null());
-        let i = aux::raw::luaL_checkoption(self.L, narg as c_int, defp, lstv.as_ptr());
+        let i = aux::raw::luaL_checkoption(self.L, narg as c_int, defp, lstv.as_ptr()) as uint;
         lst[i].ref1()
     }
 
