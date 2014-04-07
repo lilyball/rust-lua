@@ -11,8 +11,9 @@
 #![warn(missing_doc)]
 #![allow(uppercase_variables)]
 
-use std::libc;
-use std::libc::c_int;
+extern crate libc;
+
+use libc::c_int;
 use std::{cast, path, ptr, str, slice};
 use std::c_str::CString;
 
@@ -79,7 +80,8 @@ pub type Type = Type::Type;
 pub mod Type {
     //! Lua value type mod
     use raw;
-    use std::{libc, ptr, str};
+    use libc;
+    use std::{ptr, str};
 
     /// Lua value types
     #[deriving(Clone,Eq,Show)]
@@ -217,7 +219,7 @@ pub type PCallError = PCallError::PCallError;
 pub mod PCallError {
     //! State.pcall() error mod
     use raw;
-    use std::libc::c_int;
+    use libc::c_int;
     use std::fmt;
     /// State.pcall() errors
     pub enum PCallError {

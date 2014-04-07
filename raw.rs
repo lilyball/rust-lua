@@ -1,8 +1,9 @@
 #![allow(non_camel_case_types)]
 
 use config;
-use std::{default, libc, ptr};
-use std::libc::c_int;
+use std::{default, ptr};
+use libc;
+use libc::c_int;
 
 /// Type of numbers in Lua.
 pub type lua_Number = config::LUA_NUMBER;

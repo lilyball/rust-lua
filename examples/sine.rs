@@ -4,6 +4,7 @@
 
 #[phase(syntax,link)]
 extern crate lua;
+extern crate libc;
 
 mod common;
 

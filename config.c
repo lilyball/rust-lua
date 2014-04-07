@@ -11,7 +11,7 @@ int main(int argc, char **argv) {
 
 	printf("//! Module for configuration based on luaconf.h\n\n");
 	printf("#![allow(non_camel_case_types)]\n\n");
-	printf("use std::libc;\n\n");
+	printf("extern crate libc;\n\n");
 
 	printf("#[link(name = \"%s\")]\n", libname);
 	printf("extern {}\n\n");

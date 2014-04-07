@@ -3,7 +3,8 @@ use GLOBALSINDEX;
 use Type;
 use raw;
 
-use std::{libc, task};
+use libc;
+use std::task;
 use std::any::AnyRefExt;
 
 #[test]
@@ -56,7 +57,7 @@ fn test_describe() {
     s.pushcfunction(dummy);
     assert_eq!(s.typename(-1), "function");
 
-    extern "C" fn dummy(_L: *mut ::raw::lua_State) -> ::std::libc::c_int {
+    extern "C" fn dummy(_L: *mut ::raw::lua_State) -> ::libc::c_int {
         0
     }
 }

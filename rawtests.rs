@@ -1,4 +1,5 @@
-use std::{libc, ptr};
+use libc;
+use std::ptr;
 use raw;
 use aux;
 

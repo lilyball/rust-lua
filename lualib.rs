@@ -1,5 +1,5 @@
 pub mod raw {
-    use std::libc::c_int;
+    use libc::c_int;
     use raw::lua_State;
 
     pub static LUA_COLIBNAME: &'static str = "coroutine";

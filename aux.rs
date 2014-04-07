@@ -1,8 +1,8 @@
 //! Lua Auxilliary Library
 
 pub mod raw {
-    use std::libc;
-    use std::libc::c_int;
+    use libc;
+    use libc::c_int;
     use std::ptr;
 
     use raw;
