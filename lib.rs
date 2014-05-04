@@ -1631,10 +1631,11 @@ impl<'l> RawState<'l> {
 
     pub unsafe fn describe_(&mut self, idx: i32, usestack: bool) -> ~str {
         match self.type_(idx) {
-            None => ~"",
+            None => "".to_owned(),
             Some(typ) => match typ {
-                Type::Nil => ~"nil",
-                Type::Boolean => if self.toboolean(idx) { ~"true" } else { ~"false" },
+                Type::Nil => "nil".to_owned(),
+                Type::Boolean => if self.toboolean(idx) { "true".to_owned() }
+                                 else { "false".to_owned() },
                 Type::Number => {
                     // Let Lua create the string instead of us
                     if usestack { self.pushvalue(idx); } // copy the value
