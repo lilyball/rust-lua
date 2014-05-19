@@ -43,7 +43,7 @@ pub static LUA_TTHREAD:        c_int = 8;
 
 pub type lua_State = libc::c_void;
 
-pub type lua_CFunction = extern "C" unsafe fn(L: *mut lua_State) -> c_int;
+pub type lua_CFunction = unsafe extern "C" fn(L: *mut lua_State) -> c_int;
 
 /// Function type for reading blocks when loading Lua chunks.
 pub type lua_Reader = extern "C" fn(L: *mut lua_State, ud: *mut libc::c_void,
@@ -291,7 +291,7 @@ pub static LUA_MASKRET: c_int = 1 << LUA_HOOKRET;
 pub static LUA_MASKLINE: c_int = 1 << LUA_HOOKLINE;
 pub static LUA_MASKCOUNT: c_int = 1 << LUA_HOOKCOUNT;
 
-pub type lua_Hook = extern "C" unsafe fn(L: *mut lua_State, ar: *mut lua_Debug);
+pub type lua_Hook = unsafe extern "C" fn(L: *mut lua_State, ar: *mut lua_Debug);
 
 pub struct lua_Debug {
     pub event: c_int,

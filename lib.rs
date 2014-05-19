@@ -14,7 +14,7 @@
 extern crate libc;
 
 use libc::c_int;
-use std::{cast, path, ptr, str, slice};
+use std::{mem, path, ptr, str, slice};
 use std::c_str::CString;
 
 /// Human-readable major version string
@@ -371,13 +371,13 @@ impl State {
     /// Returns the same state as an ExternState
     pub fn as_extern<'a>(&'a mut self) -> &'a mut ExternState<'a> {
         #![inline]
-        unsafe { cast::transmute(self) }
+        unsafe { mem::transmute(self) }
     }
 
     /// Returns the same state as a RawState
     pub fn as_raw<'a>(&'a mut self) -> &'a mut RawState<'a> {
         #![inline]
-        unsafe { cast::transmute(self) }
+        unsafe { mem::transmute(self) }
     }
 }
 
@@ -385,7 +385,7 @@ impl<'a> ExternState<'a> {
     /// Returns the same state as a RawState
     pub fn as_raw(&mut self) -> &'a mut RawState<'a> {
         #![inline]
-        unsafe { cast::transmute(self) }
+        unsafe { mem::transmute(self) }
     }
 }
 
@@ -628,7 +628,7 @@ impl State {
     /// table traversal.
     pub fn tostring<'a>(&'a mut self, idx: i32) -> Option<&'a str> {
         #![inline(always)]
-        unsafe { cast::transmute(self.as_extern().tostring(idx)) }
+        unsafe { mem::transmute(self.as_extern().tostring(idx)) }
     }
 
     /// Converts the value at the given acceptable index into a lua string, and
@@ -637,7 +637,7 @@ impl State {
     /// See tostring() for caveats.
     pub fn tobytes<'a>(&'a mut self, idx: i32) -> Option<&'a [u8]> {
         #![inline(always)]
-        unsafe { cast::transmute(self.as_extern().tobytes(idx)) }
+        unsafe { mem::transmute(self.as_extern().tobytes(idx)) }
     }
 
     /// Returns the "length" of the value at the given acceptable index.
@@ -670,7 +670,7 @@ impl State {
     /// consider any non-valid index as acceptable.
     pub fn tothread(&mut self, idx: i32) -> Option<State> {
         #![inline(always)]
-        unsafe { cast::transmute(self.as_extern().tothread(idx)) }
+        unsafe { mem::transmute(self.as_extern().tothread(idx)) }
     }
 
     /// Converts the value at the given acceptable index to a pointer. The
@@ -1617,7 +1617,7 @@ impl<'l> ExternState<'l> {
 impl<'l> RawState<'l> {
     pub unsafe fn newthread(&mut self) -> State {
         #![inline]
-        cast::transmute(ExternState::from_lua_State(raw::lua_newthread(self.L)))
+        mem::transmute(ExternState::from_lua_State(raw::lua_newthread(self.L)))
     }
 
     pub unsafe fn atpanic(&mut self, panicf: CFunction) -> CFunction {
@@ -1806,7 +1806,7 @@ impl<'l> RawState<'l> {
             None
         } else {
             slice::raw::buf_as_slice(s as *u8, sz as uint, |b| {
-                Some(cast::transmute::<&[u8], &'static [u8]>(b))
+                Some(mem::transmute::<&[u8], &'static [u8]>(b))
             })
         }
     }
@@ -2376,14 +2376,14 @@ impl State {
     /// If the string is not utf-8, returns None.
     pub fn checkstring<'a>(&'a mut self, narg: i32) -> Option<&'a str> {
         #![inline(always)]
-        unsafe { cast::transmute(self.as_extern().checkstring(narg)) }
+        unsafe { mem::transmute(self.as_extern().checkstring(narg)) }
     }
 
     /// Checks whether the function argument `narg` is a lua string, and
     /// returns it as a byte vector. See checkstring() for caveats.
     pub fn checkbytes<'a>(&'a mut self, narg: i32) -> &'a [u8] {
         #![inline(always)]
-        unsafe { cast::transmute(self.as_extern().checkbytes(narg)) }
+        unsafe { mem::transmute(self.as_extern().checkbytes(narg)) }
     }
 
     /// If the function argument `narg` is a string, returns this string. If
@@ -2394,8 +2394,8 @@ impl State {
     pub fn optstring<'a>(&'a mut self, narg: i32, d: &'a str) -> Option<&'a str> {
         #![inline(always)]
         unsafe {
-            let d = cast::transmute::<&'a str, &'static str>(d);
-            cast::transmute(self.as_extern().optstring(narg, d))
+            let d = mem::transmute::<&'a str, &'static str>(d);
+            mem::transmute(self.as_extern().optstring(narg, d))
         }
     }
 
@@ -2404,8 +2404,8 @@ impl State {
     pub fn optbytes<'a>(&'a mut self, narg: i32, d: &'a [u8]) -> &'a [u8] {
         #![inline(always)]
         unsafe {
-            let d = cast::transmute::<&'a [u8], &'static [u8]>(d);
-            cast::transmute(self.as_extern().optbytes(narg, d))
+            let d = mem::transmute::<&'a [u8], &'static [u8]>(d);
+            mem::transmute(self.as_extern().optbytes(narg, d))
         }
     }
 
@@ -2560,7 +2560,7 @@ impl State {
     /// returns it.
     pub fn gsub<'a>(&'a mut self, s: &str, p: &str, r: &str) -> &'a str {
         #![inline(always)]
-        unsafe { cast::transmute(self.as_extern().gsub(s, p, r)) }
+        unsafe { mem::transmute(self.as_extern().gsub(s, p, r)) }
     }
 
     /// Checks whether `cond` is true. If not, raises an error with the
@@ -2843,7 +2843,7 @@ impl<'l> RawState<'l> {
         let mut sz: libc::size_t = 0;
         let s = aux::raw::luaL_checklstring(self.L, narg, &mut sz);
         slice::raw::buf_as_slice(s as *u8, sz as uint, |b| {
-            cast::transmute::<&[u8], &'static [u8]>(b)
+            mem::transmute::<&[u8], &'static [u8]>(b)
         })
     }
 
@@ -2861,7 +2861,7 @@ impl<'l> RawState<'l> {
         let mut sz: libc::size_t = 0;
         let s = d.with_c_str(|d| aux::raw::luaL_optlstring(self.L, narg, d, &mut sz));
         slice::raw::buf_as_slice(s as *u8, sz as uint, |b| {
-            cast::transmute::<&[u8], &'static [u8]>(b)
+            mem::transmute::<&[u8], &'static [u8]>(b)
         })
     }
 
@@ -2994,7 +2994,7 @@ impl<'l> RawState<'l> {
         let res = aux::raw::luaL_gsub(self.L, sp, pp, rp);
         let cstr = CString::new(res, false);
         let res = cstr.as_str().unwrap();
-        cast::transmute::<&str,&'static str>(res)
+        mem::transmute::<&str,&'static str>(res)
     }
 
     pub unsafe fn argcheck(&mut self, cond: bool, narg: i32, extramsg: &str) {
@@ -3078,7 +3078,7 @@ impl<'a> Buffer<'a> {
         // Rather than unsafely trying to transmute that to the array, just return the field
         // ourselves.
         aux::raw::luaL_prepbuffer(&mut self.B);
-        cast::transmute::<&mut [i8, ..aux::raw::LUAL_BUFFERSIZE],
+        mem::transmute::<&mut [i8, ..aux::raw::LUAL_BUFFERSIZE],
                           &mut [u8, ..aux::raw::LUAL_BUFFERSIZE]>(&mut self.B.buffer)
     }
 
@@ -3465,6 +3465,6 @@ unsafe fn c_str_to_bytes<'a>(cstr: *libc::c_char) -> Option<&'a [u8]> {
     } else {
         let cstr = CString::new(cstr, false);
         let bytes = cstr.as_bytes();
-        Some(cast::transmute::<&[u8],&'a [u8]>(bytes))
+        Some(mem::transmute::<&[u8],&'a [u8]>(bytes))
     }
 }
