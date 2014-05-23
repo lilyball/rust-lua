@@ -16,10 +16,10 @@ pub fn repl(L: &mut lua::State) {
             Ok(line) => line,
             Err(_) => break
         };
-        if line.starts_with("=") {
-            line = format!("return {}", line.slice_from(1));
+        if line.as_slice().starts_with("=") {
+            line = format!("return {}", line.as_slice().slice_from(1));
         }
-        match L.loadbuffer(line, "=stdin") {
+        match L.loadbuffer(line.as_slice(), "=stdin") {
             Ok(_) => (),
             Err(err) => { let _ = writeln!(stderr, "{}", err); continue; }
         }
