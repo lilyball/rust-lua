@@ -294,7 +294,7 @@ impl Drop for State {
 ///
 /// See State for more information.
 // NB: layout must be identical to State
-#[unsafe_no_drop_flag]
+// If Drop is ever implemented, add unsafe_no_drop_flag
 pub struct ExternState<'a> {
     L: *mut raw::lua_State,
     stackspace: i32
@@ -304,7 +304,7 @@ pub struct ExternState<'a> {
 /// functions eschew safety in favor of speed. Like ExternState, all
 /// error-throwing functions are assumed to be using longjmp.
 // NB: layout must be identical to State
-#[unsafe_no_drop_flag]
+// If Drop is ever implemented, add unsafe_no_drop_flag
 pub struct RawState<'a> {
     L: *mut raw::lua_State,
     stackspace: i32
