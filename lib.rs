@@ -442,7 +442,7 @@ impl State {
 
     /// Returns the textual description of the value at the given acceptable index.
     /// Returns "" if the given index is non-valid.
-    pub fn describe(&mut self, idx: i32) -> StrBuf {
+    pub fn describe(&mut self, idx: i32) -> String {
         #![inline(always)]
         unsafe { self.as_extern().describe(idx) }
     }
@@ -452,7 +452,7 @@ impl State {
     /// to avoid converting the existing value's type. This method allows this
     /// behavior to be disabled. If usestack is true, this method may require 1
     /// free slot on the stack.
-    pub fn describe_(&mut self, idx: i32, usestack: bool) -> StrBuf {
+    pub fn describe_(&mut self, idx: i32, usestack: bool) -> String {
         #![inline(always)]
         unsafe { self.as_extern().describe_(idx, usestack) }
     }
@@ -1174,13 +1174,13 @@ impl<'l> ExternState<'l> {
         }
     }
 
-    pub unsafe fn describe(&mut self, idx: i32) -> StrBuf {
+    pub unsafe fn describe(&mut self, idx: i32) -> String {
         self.check_acceptable(idx);
         self.checkstack_(1);
         self.as_raw().describe(idx)
     }
 
-    pub unsafe fn describe_(&mut self, idx: i32, usestack: bool) -> StrBuf {
+    pub unsafe fn describe_(&mut self, idx: i32, usestack: bool) -> String {
         self.check_acceptable(idx);
         if usestack { self.checkstack_(1); }
         self.as_raw().describe_(idx, usestack)
@@ -1625,11 +1625,11 @@ impl<'l> RawState<'l> {
         raw::lua_atpanic(self.L, panicf)
     }
 
-    pub unsafe fn describe(&mut self, idx: i32) -> StrBuf {
+    pub unsafe fn describe(&mut self, idx: i32) -> String {
         self.describe_(idx, true)
     }
 
-    pub unsafe fn describe_(&mut self, idx: i32, usestack: bool) -> StrBuf {
+    pub unsafe fn describe_(&mut self, idx: i32, usestack: bool) -> String {
         match self.type_(idx) {
             None => "".to_owned(),
             Some(typ) => match typ {

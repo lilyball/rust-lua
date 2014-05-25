@@ -28,7 +28,7 @@ fn test_errorstr() {
     });
     let err = res.unwrap_err();
     let expected = "unprotected error in call to Lua API (some err)";
-    let s = err.as_ref::<StrBuf>();
+    let s = err.as_ref::<String>();
     if s.is_some() {
         assert_eq!(s.unwrap().as_slice(), expected);
     } else {
