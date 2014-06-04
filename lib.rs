@@ -9,7 +9,7 @@
 #![feature(macro_rules)]
 
 #![warn(missing_doc)]
-#![allow(uppercase_variables)]
+#![allow(uppercase_variables,non_snake_case_functions)]
 
 extern crate libc;
 
@@ -1631,20 +1631,20 @@ impl<'l> RawState<'l> {
 
     pub unsafe fn describe_(&mut self, idx: i32, usestack: bool) -> String {
         match self.type_(idx) {
-            None => "".to_owned(),
+            None => "".to_string(),
             Some(typ) => match typ {
-                Type::Nil => "nil".to_owned(),
-                Type::Boolean => if self.toboolean(idx) { "true".to_owned() }
-                                 else { "false".to_owned() },
+                Type::Nil => "nil".to_string(),
+                Type::Boolean => if self.toboolean(idx) { "true".to_string() }
+                                 else { "false".to_string() },
                 Type::Number => {
                     // Let Lua create the string instead of us
                     if usestack { self.pushvalue(idx); } // copy the value
-                    let s = self.tostring(-1).map(|s| s.to_owned());
+                    let s = self.tostring(-1).map(|s| s.to_string());
                     if usestack { self.pop(1); } // remove the copied value
                     s.unwrap_or_default() // default will be ~""
                 }
                 Type::String => {
-                    self.tostring(idx).unwrap_or("<invalid utf8>").to_owned()
+                    self.tostring(idx).unwrap_or("<invalid utf8>").to_string()
                 }
                 Type::LightUserdata |
                 Type::Userdata |
