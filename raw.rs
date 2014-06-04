@@ -97,23 +97,10 @@ extern {
     pub fn lua_tolstring(L: *mut lua_State, idx: c_int,
                             len: *mut libc::size_t) -> *libc::c_char;
     pub fn lua_objlen(L: *mut lua_State, idx: c_int) -> libc::size_t;
-    // FIXME(#11040): fn -> Option<extern fn> is not immediate on 32-bit linux
-    #[cfg(not(target_os="macos"), not(target_os="windows"))]
-    #[link_name="lua_tocfunction"]
-    pub fn lua_tocfunction_(L: *mut lua_State, idx: c_int) -> *libc::c_void;
-    #[cfg(target_os="macos")]
-    #[cfg(target_os="windows")]
     pub fn lua_tocfunction(L: *mut lua_State, idx: c_int) -> Option<lua_CFunction>;
     pub fn lua_touserdata(L: *mut lua_State, idx: c_int) -> *mut libc::c_void;
     pub fn lua_tothread(L: *mut lua_State, idx: c_int) -> *mut lua_State;
     pub fn lua_topointer(L: *mut lua_State, idx: c_int) -> *libc::c_void;
-}
-
-#[cfg(not(target_os="macos"), not(target_os="windows"))]
-#[inline(always)]
-// FIXME(#11040)
-pub unsafe fn lua_tocfunction(L: *mut lua_State, idx: c_int) -> Option<lua_CFunction> {
-    ::std::cast::transmute(lua_tocfunction_(L, idx))
 }
 
 // Push functions (C -> stack)
