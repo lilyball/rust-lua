@@ -18,14 +18,14 @@ fn main() {
 }
 
 lua_extern! {
-    unsafe fn my_sin(L: &mut lua::ExternState) -> i32 {
+    unsafe fn my_sin(L: &mut lua::State) -> i32 {
         let input = L.checknumber(1);
         let output = input.sin();
         L.pushnumber(output);
         1
     }
 
-    unsafe fn my_cos(L: &mut lua::ExternState) -> i32 {
+    unsafe fn my_cos(L: &mut lua::State) -> i32 {
         let input = L.checknumber(1);
         let output = input.cos();
         L.pushnumber(output);
@@ -35,7 +35,7 @@ lua_extern! {
 
 lua_extern_pub! {
     // this function is marked public
-    unsafe fn my_tan(L: &mut lua::ExternState) -> i32 {
+    unsafe fn my_tan(L: &mut lua::State) -> i32 {
         let input = L.checknumber(1);
         let output = input.tan();
         L.pushnumber(output);

@@ -6,7 +6,7 @@ macro_rules! lua_extern {
         $(
             extern "C" fn $name($arg: *mut ::lua::raw::lua_State) -> ::libc::c_int {
                 unsafe {
-                    let mut $arg = ::lua::ExternState::from_lua_State($arg);
+                    let mut $arg = ::lua::State::<::lua::SafeBehavior>::from_lua_State($arg);
                     return inner(&mut $arg) as ::libc::c_int;
                 }
 
@@ -22,7 +22,7 @@ macro_rules! lua_extern_pub {
         $(
             pub extern "C" fn $name($arg: *mut ::lua::raw::lua_State) -> ::libc::c_int {
                 unsafe {
-                    let mut $arg = ::lua::ExternState::from_lua_State($arg);
+                    let mut $arg = ::lua::State::<::lua::SafeBehavior>::from_lua_State($arg);
                     return inner(&mut $arg) as ::libc::c_int;
                 }
 
