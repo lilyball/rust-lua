@@ -4,7 +4,11 @@ include common.mk
 
 LUA_PCNAME = $(if $(shell pkg-config --exists lua5.1 && echo yes),lua5.1,lua)
 LUA_LIBNAME = $(firstword $(patsubst -llua%,lua%,$(filter -llua%,$(shell pkg-config --libs-only-l $(LUA_PCNAME)))))
+LUA_LIBDIRS = $(shell pkg-config --libs-only-L $(LUA_PCNAME))
 CFLAGS += $(shell pkg-config --cflags $(LUA_PCNAME))
+
+RUSTC := rustc
+export RUSTFLAGS += -O $(LUA_LIBDIRS)
 
 LIB_RS := $(filter-out tests.rs,$(wildcard *.rs))
 
@@ -13,7 +17,7 @@ lib: $(LIBNAME)
 all: lib examples doc
 
 $(LIBNAME): $(LIB_RS)
-	rustc -O lib.rs
+	$(RUSTC) $(RUSTFLAGS) lib.rs
 
 $(LIBNAME): config.rs
 
@@ -28,7 +32,7 @@ test: test-lua
 	env RUST_THREADS=1 ./test-lua $(TESTNAME)
 
 test-lua: $(wildcard *.rs) config.rs
-	rustc -o $@ --test lib.rs
+	$(RUSTC) $(RUSTFLAGS) -o $@ --test lib.rs
 
 clean:
 	rm -f test-lua $(LIBNAME) config.rs
@@ -37,6 +41,9 @@ clean:
 
 examples:
 	$(MAKE) -C examples
+
+examples/%:
+	$(MAKE) -C examples $*
 
 doc: $(LIB_RS) config.rs
 	rustdoc lib.rs
