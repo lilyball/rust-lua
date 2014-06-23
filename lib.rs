@@ -274,7 +274,7 @@ pub mod PCallError {
 #[unsafe_no_drop_flag]
 pub struct State {
     L: *mut raw::lua_State,
-    stackspace: i32
+    _stackspace: i32
 }
 
 impl Drop for State {
@@ -324,7 +324,7 @@ impl State {
             let L = raw::lua_newstate(alloc, ptr::mut_null());
             if L.is_not_null() {
                 raw::lua_atpanic(L, panic);
-                Some(State{ L: L, stackspace: MINSTACK })
+                Some(State{ L: L, _stackspace: MINSTACK })
             } else {
                 None
             }

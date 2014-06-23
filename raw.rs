@@ -280,6 +280,7 @@ pub static LUA_MASKCOUNT: c_int = 1 << LUA_HOOKCOUNT;
 
 pub type lua_Hook = unsafe extern "C" fn(L: *mut lua_State, ar: *mut lua_Debug);
 
+#[repr(C)]
 pub struct lua_Debug {
     pub event: c_int,
     /// A reasonable name for the given function. Because functions in Lua are first-class values,
