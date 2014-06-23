@@ -2,7 +2,7 @@
 
 #![allow(uppercase_variables)]
 
-#[phase(syntax,link)]
+#[phase(plugin,link)]
 extern crate lua;
 extern crate libc;
 
