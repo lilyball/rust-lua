@@ -4,7 +4,7 @@ include common.mk
 
 LUA_PCNAME = $(if $(shell pkg-config --exists lua5.1 && echo yes),lua5.1,lua)
 LUA_LIBNAME = $(firstword $(patsubst -llua%,lua%,$(filter -llua%,$(shell pkg-config --libs-only-l $(LUA_PCNAME)))))
-LUA_LIBDIRS = $(shell pkg-config --libs-only-L $(LUA_PCNAME))
+LUA_LIBDIRS = $(filter-out -L/usr/local/lib,$(shell pkg-config --libs-only-L $(LUA_PCNAME)))
 CFLAGS += $(shell pkg-config --cflags $(LUA_PCNAME))
 
 RUSTC := rustc
