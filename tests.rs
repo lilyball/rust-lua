@@ -28,11 +28,11 @@ fn test_errorstr() {
     });
     let err = res.unwrap_err();
     let expected = "unprotected error in call to Lua API (some err)";
-    let s = err.as_ref::<String>();
+    let s = err.downcast_ref::<String>();
     if s.is_some() {
         assert_eq!(s.unwrap().as_slice(), expected);
     } else {
-        let s = err.as_ref::<&'static str>();
+        let s = err.downcast_ref::<&'static str>();
         if s.is_some() {
             assert_eq!(*s.unwrap(), expected);
         } else {
@@ -111,10 +111,10 @@ fn test_tocfunction() {
     // extern "C" fns don't implement Eq, so cast them to a pointer instead
 
     s.pushstring("foo");
-    assert_eq!(s.tocfunction(1).map(|f| f as *()), None);
+    assert_eq!(s.tocfunction(1).map(|f| f as *const ()), None);
 
     s.pushcfunction(cfunc);
-    assert_eq!(s.tocfunction(2).map(|f| f as *()), Some(cfunc as *()));
+    assert_eq!(s.tocfunction(2).map(|f| f as *const ()), Some(cfunc as *const ()));
 
     extern "C" fn cfunc(_L: *mut raw::lua_State) -> libc::c_int { 0 }
 }
