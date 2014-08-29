@@ -3349,7 +3349,8 @@ impl<'l> ExternState<'l> {
             luaassert!(self, self.gettop() >= 1 && self.isfunction(-1),
                        "getinfo: top stack value is not a function");
         }
-        if what.find(&['f', 'L']).is_some() {
+        let x: &[_] = &['f', 'L'];
+        if what.find(x).is_some() {
             self.checkstack_(1);
         }
         self.as_raw().getinfo(what, ar)
