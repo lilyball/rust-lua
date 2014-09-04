@@ -1,5 +1,7 @@
 //! Lua Auxilliary Library
 
+#![allow(ctypes)]
+
 pub mod raw {
     use libc;
     use libc::c_int;

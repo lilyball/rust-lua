@@ -1,7 +1,7 @@
 // Sample code that shows how to traverse a table.
 // We'll use it to traverse the global table
 
-#![allow(uppercase_variables)]
+#![allow(non_snake_case)]
 
 extern crate lua;
 
