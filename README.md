@@ -1,6 +1,8 @@
 # rust-lua
 
-Copyright 2013 Kevin Ballard
+[![Build Status](https://travis-ci.org/kballard/rust-lua.svg)](https://travis-ci.org/kballard/rust-lua)
+
+Copyright 2014 Kevin Ballard
 
 ## Description
 
@@ -17,3 +19,11 @@ for auxlib functions).
 Unfortunately, there are very few tests. It turns out to be complicated to
 properly test the Lua C API, and there are very few examples that could be
 used as tests. Please let me know if there are any bugs.
+
+## Installation
+
+    make all
+
+To run the tests, use the test make target:
+
+    make test
