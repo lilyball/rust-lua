@@ -10,7 +10,7 @@ extern "C" fn alloc_helper(_ud: *mut libc::c_void, ptr: *mut libc::c_void, _osiz
     unsafe {
         if nsize == 0 {
             libc::free(ptr as *mut libc::c_void);
-            ptr::mut_null()
+            ptr::null_mut()
         } else {
             libc::realloc(ptr, nsize)
         }
@@ -25,7 +25,7 @@ extern "C" fn panic_helper(_L: *mut raw::lua_State) -> libc::c_int {
 #[test]
 fn test_lua_newstate() {
     unsafe {
-        let L = raw::lua_newstate(alloc_helper, ptr::mut_null());
+        let L = raw::lua_newstate(alloc_helper, ptr::null_mut());
         raw::lua_atpanic(L, panic_helper);
         raw::lua_pushinteger(L, 42);
         raw::lua_close(L);

@@ -111,7 +111,7 @@ pub mod Type {
         pub fn name(&self) -> &'static str {
             unsafe {
                 // NB: lua_typename() doesn't actually use its state parameter
-                let s = raw::lua_typename(ptr::mut_null(), *self as libc::c_int);
+                let s = raw::lua_typename(ptr::null_mut(), *self as libc::c_int);
                 str::raw::c_str_to_static_slice(s)
             }
         }
@@ -284,7 +284,7 @@ impl Drop for State {
             unsafe {
                 raw::lua_close(self.L);
             }
-            self.L = ptr::mut_null();
+            self.L = ptr::null_mut();
         }
     }
 }
@@ -324,7 +324,7 @@ impl State {
     /// Returns a new State, or None if memory cannot be allocated for the state
     pub fn new_opt() -> Option<State> {
         return unsafe {
-            let L = raw::lua_newstate(alloc, ptr::mut_null());
+            let L = raw::lua_newstate(alloc, ptr::null_mut());
             if L.is_not_null() {
                 raw::lua_atpanic(L, panic);
                 Some(State{ L: L, _stackspace: MINSTACK })
@@ -338,7 +338,7 @@ impl State {
             unsafe {
                 if nsize == 0 {
                     libc::free(ptr as *mut libc::c_void);
-                    ptr::mut_null()
+                    ptr::null_mut()
                 } else {
                     libc::realloc(ptr, nsize)
                 }
@@ -2781,7 +2781,7 @@ impl<'l> ExternState<'l> {
     pub fn buffinit<'a>(&'a mut self) -> Buffer<'a> {
         #![inline]
         let mut B = aux::raw::luaL_Buffer{
-            p: ptr::mut_null(),
+            p: ptr::null_mut(),
             lvl: 0,
             L: self.L,
             buffer: [0, ..aux::raw::LUAL_BUFFERSIZE as uint]
@@ -3175,7 +3175,7 @@ pub type Hook = raw::lua_Hook;
 /// fields of lua_Debug with useful information, call getinfo().
 pub type Debug = raw::lua_Debug;
 
-impl raw::lua_Debug {
+impl Debug {
     /// Returns a newly-zeroed instance of Debug
     pub fn new() -> Debug {
         #![inline]
