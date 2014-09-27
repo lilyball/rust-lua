@@ -123,6 +123,7 @@ pub type GC = GC::GC;
 pub mod GC {
     //! Garbage collection option mod
     use raw;
+    #[allow(dead_code)]
     /// Garbage collection options (used with State.gc())
     pub enum GC {
         /// Stops the garbage collector
