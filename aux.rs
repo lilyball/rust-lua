@@ -1,5 +1,7 @@
 //! Lua Auxilliary Library
 
+#![allow(ctypes)]
+
 pub mod raw {
     use libc;
     use libc::c_int;
@@ -82,12 +84,12 @@ pub mod raw {
 
     #[inline(always)]
     pub unsafe fn luaL_checkstring(L: *mut lua_State, n: c_int) -> *const libc::c_char {
-        luaL_checklstring(L, n, ptr::mut_null())
+        luaL_checklstring(L, n, ptr::null_mut())
     }
 
     #[inline(always)]
     pub unsafe fn luaL_optstring(L: *mut lua_State, n: c_int, d: *const libc::c_char) -> *const libc::c_char {
-        luaL_optlstring(L, n, d, ptr::mut_null())
+        luaL_optlstring(L, n, d, ptr::null_mut())
     }
 
     #[inline(always)]
