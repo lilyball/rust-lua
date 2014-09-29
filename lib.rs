@@ -9,7 +9,7 @@
 #![feature(macro_rules)]
 
 #![warn(missing_doc)]
-#![allow(uppercase_variables,non_snake_case_functions)]
+#![allow(non_snake_case)]
 
 extern crate libc;
 
@@ -111,7 +111,7 @@ pub mod Type {
         pub fn name(&self) -> &'static str {
             unsafe {
                 // NB: lua_typename() doesn't actually use its state parameter
-                let s = raw::lua_typename(ptr::mut_null(), *self as libc::c_int);
+                let s = raw::lua_typename(ptr::null_mut(), *self as libc::c_int);
                 str::raw::c_str_to_static_slice(s)
             }
         }
@@ -124,6 +124,7 @@ pub mod GC {
     //! Garbage collection option mod
     use raw;
     /// Garbage collection options (used with State.gc())
+    #[allow(dead_code)] // FIXME(rust-lang/rust#17632): dead_code warning is wrong here
     pub enum GC {
         /// Stops the garbage collector
         Stop = raw::LUA_GCSTOP as int,
@@ -284,7 +285,7 @@ impl Drop for State {
             unsafe {
                 raw::lua_close(self.L);
             }
-            self.L = ptr::mut_null();
+            self.L = ptr::null_mut();
         }
     }
 }
@@ -324,7 +325,7 @@ impl State {
     /// Returns a new State, or None if memory cannot be allocated for the state
     pub fn new_opt() -> Option<State> {
         return unsafe {
-            let L = raw::lua_newstate(alloc, ptr::mut_null());
+            let L = raw::lua_newstate(alloc, ptr::null_mut());
             if L.is_not_null() {
                 raw::lua_atpanic(L, panic);
                 Some(State{ L: L, _stackspace: MINSTACK })
@@ -338,7 +339,7 @@ impl State {
             unsafe {
                 if nsize == 0 {
                     libc::free(ptr as *mut libc::c_void);
-                    ptr::mut_null()
+                    ptr::null_mut()
                 } else {
                     libc::realloc(ptr, nsize)
                 }
@@ -2781,7 +2782,7 @@ impl<'l> ExternState<'l> {
     pub fn buffinit<'a>(&'a mut self) -> Buffer<'a> {
         #![inline]
         let mut B = aux::raw::luaL_Buffer{
-            p: ptr::mut_null(),
+            p: ptr::null_mut(),
             lvl: 0,
             L: self.L,
             buffer: [0, ..aux::raw::LUAL_BUFFERSIZE as uint]
@@ -3175,7 +3176,7 @@ pub type Hook = raw::lua_Hook;
 /// fields of lua_Debug with useful information, call getinfo().
 pub type Debug = raw::lua_Debug;
 
-impl raw::lua_Debug {
+impl Debug {
     /// Returns a newly-zeroed instance of Debug
     pub fn new() -> Debug {
         #![inline]
@@ -3349,7 +3350,7 @@ impl<'l> ExternState<'l> {
             luaassert!(self, self.gettop() >= 1 && self.isfunction(-1),
                        "getinfo: top stack value is not a function");
         }
-        if what.find(&['f', 'L']).is_some() {
+        if what.find(['f', 'L'].as_slice()).is_some() {
             self.checkstack_(1);
         }
         self.as_raw().getinfo(what, ar)

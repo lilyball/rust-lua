@@ -260,7 +260,7 @@ pub unsafe fn lua_getglobal(L: *mut lua_State, s: *const libc::c_char) {
 
 #[inline(always)]
 pub unsafe fn lua_tostring(L: *mut lua_State, i: c_int) -> *const libc::c_char {
-    lua_tolstring(L, i, ptr::mut_null())
+    lua_tolstring(L, i, ptr::null_mut())
 }
 
 /* Debug API */

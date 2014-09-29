@@ -23,6 +23,7 @@ pub mod raw {
     pub static LUA_REFNIL: c_int = -1;
 
     #[allow(non_camel_case_types)]
+    #[repr(C)]
     pub struct luaL_Reg {
         pub name: *const libc::c_char,
         pub func: Option<lua_CFunction>
@@ -82,12 +83,12 @@ pub mod raw {
 
     #[inline(always)]
     pub unsafe fn luaL_checkstring(L: *mut lua_State, n: c_int) -> *const libc::c_char {
-        luaL_checklstring(L, n, ptr::mut_null())
+        luaL_checklstring(L, n, ptr::null_mut())
     }
 
     #[inline(always)]
     pub unsafe fn luaL_optstring(L: *mut lua_State, n: c_int, d: *const libc::c_char) -> *const libc::c_char {
-        luaL_optlstring(L, n, d, ptr::mut_null())
+        luaL_optlstring(L, n, d, ptr::null_mut())
     }
 
     #[inline(always)]
@@ -142,6 +143,7 @@ pub mod raw {
     // Generic Buffer manipulation
 
     #[allow(non_camel_case_types)]
+    #[repr(C)]
     pub struct luaL_Buffer {
         pub p: *mut libc::c_char, // current position in buffer
         pub lvl: c_int, // number of strings in the stack (level)
