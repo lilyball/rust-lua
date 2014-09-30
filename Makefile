@@ -17,25 +17,25 @@ lib: $(LIBNAME)
 all: lib examples doc
 
 $(LIBNAME): $(LIB_RS)
-	$(RUSTC) $(RUSTFLAGS) lib.rs
+	$(RUSTC) $(RUSTFLAGS) src/lib.rs
 
-$(LIBNAME): config.rs
+$(LIBNAME): src/config.rs
 
-config.rs: gen-config
+src/config.rs: gen-config
 	./gen-config $(LUA_LIBNAME) > $@
 
 .INTERMEDIATE: gen-config
-gen-config: config.c
+gen-config: src/config.c
 	$(CC) -o $@ $(CFLAGS) $<
 
 test: test-lua
 	env RUST_THREADS=1 ./test-lua $(TESTNAME)
 
-test-lua: $(wildcard *.rs) config.rs
-	$(RUSTC) $(RUSTFLAGS) -o $@ --test lib.rs
+test-lua: $(wildcard src/*.rs) src/config.rs
+	$(RUSTC) $(RUSTFLAGS) -o $@ --test src/lib.rs
 
 clean:
-	rm -f test-lua $(LIBNAME) config.rs
+	rm -f test-lua $(LIBNAME) src/config.rs
 	rm -rf doc
 	$(MAKE) -C examples clean
 
@@ -45,6 +45,6 @@ examples:
 examples/%:
 	$(MAKE) -C examples $*
 
-doc: $(LIB_RS) config.rs
-	rustdoc lib.rs
+doc: $(LIB_RS) src/config.rs
+	rustdoc src/lib.rs
 	@touch doc

@@ -1,0 +1,5 @@
+[package]
+name = "lua"
+version = "0.1.0"
+authors = [ "kevin@sb.org" ]
+build = "make src/config.rs"

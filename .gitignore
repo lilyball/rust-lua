@@ -1,4 +1,6 @@
 *.rlib
 /test-lua
-/config.rs
+/src/config.rs
 /doc/
+/target/
+/Cargo.lock
