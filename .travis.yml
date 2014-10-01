@@ -1,12 +1,12 @@
+language: rust
 env:
   global:
-    - secure: eRFB+9CxFmOLeWhh0dMcdxB8pNGaRLMk45KNDFYgwF9aVW36BuiyEAiCHg712Ckc1f75eVIuJ86N3gER9OTmAre7GdOonheI6CwMYItDRtdbwMdv55lMGLsid2Z+S0AQgR2jlLjBy6HRjVozb7u/DPw3rEdjnfIOuyxM8lFq9qk=
-before_install:
-  - yes | sudo add-apt-repository ppa:hansjorg/rust
-  - sudo apt-get update
+    - secure: cXo6ZNWvMmnxZLx72uBoHVQg9/JaBI3KQpEIEOJgP4LTlgKGCjsFqptN9R+r7tLbobo1Vnz525iQCxSSkKFBw7TRunvaB8UJLeYRug8VBwiwvBWyfiHA/sVhLhwYKnZcpRc0dt4gb6BbkjZCRUku1HgnNp5348KGhqiQJy35nLg=
 install:
-  - sudo apt-get install rust-nightly liblua5.1-0-dev
+  - sudo apt-get install liblua5.1-0-dev
 script:
-  - make all test
+  - cargo build
+  - cargo test
+  - cargo doc --no-deps
 after_script:
   - curl http://www.rust-ci.org/artifacts/put?t=$RUSTCI_TOKEN | sh
