@@ -1,1 +1,0 @@
-LIBNAME := liblua.rlib
