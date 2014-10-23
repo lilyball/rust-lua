@@ -11,35 +11,35 @@ pub type lua_Number = config::LUA_NUMBER;
 /// Type for integer functions
 pub type lua_Integer = config::LUA_INTEGER;
 
-pub static MULTRET: c_int = -1;
+pub const MULTRET: c_int = -1;
 
-pub static LUA_REGISTRYINDEX: c_int = -10000;
-pub static LUA_ENVIRONINDEX: c_int = -10001;
-pub static LUA_GLOBALSINDEX: c_int = -10002;
+pub const LUA_REGISTRYINDEX: c_int = -10000;
+pub const LUA_ENVIRONINDEX: c_int = -10001;
+pub const LUA_GLOBALSINDEX: c_int = -10002;
 #[inline(always)]
 pub fn lua_upvalueindex(i: c_int) -> c_int {
     LUA_GLOBALSINDEX - i
 }
 
 // Thread statuses
-pub static LUA_YIELD: c_int = 1;
-pub static LUA_ERRRUN: c_int = 2;
-pub static LUA_ERRSYNTAX: c_int = 3;
-pub static LUA_ERRMEM: c_int = 4;
-pub static LUA_ERRERR: c_int = 5;
+pub const LUA_YIELD: c_int = 1;
+pub const LUA_ERRRUN: c_int = 2;
+pub const LUA_ERRSYNTAX: c_int = 3;
+pub const LUA_ERRMEM: c_int = 4;
+pub const LUA_ERRERR: c_int = 5;
 
 // Basic types
-pub static LUA_TNONE:          c_int = -1;
+pub const LUA_TNONE:          c_int = -1;
 
-pub static LUA_TNIL:           c_int = 0;
-pub static LUA_TBOOLEAN:       c_int = 1;
-pub static LUA_TLIGHTUSERDATA: c_int = 2;
-pub static LUA_TNUMBER:        c_int = 3;
-pub static LUA_TSTRING:        c_int = 4;
-pub static LUA_TTABLE:         c_int = 5;
-pub static LUA_TFUNCTION:      c_int = 6;
-pub static LUA_TUSERDATA:      c_int = 7;
-pub static LUA_TTHREAD:        c_int = 8;
+pub const LUA_TNIL:           c_int = 0;
+pub const LUA_TBOOLEAN:       c_int = 1;
+pub const LUA_TLIGHTUSERDATA: c_int = 2;
+pub const LUA_TNUMBER:        c_int = 3;
+pub const LUA_TSTRING:        c_int = 4;
+pub const LUA_TTABLE:         c_int = 5;
+pub const LUA_TFUNCTION:      c_int = 6;
+pub const LUA_TUSERDATA:      c_int = 7;
+pub const LUA_TTHREAD:        c_int = 8;
 
 pub type lua_State = libc::c_void;
 
@@ -159,14 +159,14 @@ extern {
 }
 
 // Garbage-collection function and options
-pub static LUA_GCSTOP:       c_int = 0;
-pub static LUA_GCRESTART:    c_int = 1;
-pub static LUA_GCCOLLECT:    c_int = 2;
-pub static LUA_GCCOUNT:      c_int = 3;
-pub static LUA_GCCOUNTB:     c_int = 4;
-pub static LUA_GCSTEP:       c_int = 5;
-pub static LUA_GCSETPAUSE:   c_int = 6;
-pub static LUA_GCSETSTEPMUL: c_int = 7;
+pub const LUA_GCSTOP:       c_int = 0;
+pub const LUA_GCRESTART:    c_int = 1;
+pub const LUA_GCCOLLECT:    c_int = 2;
+pub const LUA_GCCOUNT:      c_int = 3;
+pub const LUA_GCCOUNTB:     c_int = 4;
+pub const LUA_GCSTEP:       c_int = 5;
+pub const LUA_GCSETPAUSE:   c_int = 6;
+pub const LUA_GCSETSTEPMUL: c_int = 7;
 
 extern {
     pub fn lua_gc(L: *mut lua_State, what: c_int, data: c_int) -> c_int;
@@ -266,17 +266,17 @@ pub unsafe fn lua_tostring(L: *mut lua_State, i: c_int) -> *const libc::c_char {
 /* Debug API */
 
 // Event codes
-pub static LUA_HOOKCALL:    c_int = 0;
-pub static LUA_HOOKRET:     c_int = 1;
-pub static LUA_HOOKLINE:    c_int = 2;
-pub static LUA_HOOKCOUNT:   c_int = 3;
-pub static LUA_HOOKTAILRET: c_int = 4;
+pub const LUA_HOOKCALL:    c_int = 0;
+pub const LUA_HOOKRET:     c_int = 1;
+pub const LUA_HOOKLINE:    c_int = 2;
+pub const LUA_HOOKCOUNT:   c_int = 3;
+pub const LUA_HOOKTAILRET: c_int = 4;
 
 // Event masks
-pub static LUA_MASKCALL: c_int = 1 << (LUA_HOOKCALL as uint);
-pub static LUA_MASKRET: c_int = 1 << (LUA_HOOKRET as uint);
-pub static LUA_MASKLINE: c_int = 1 << (LUA_HOOKLINE as uint);
-pub static LUA_MASKCOUNT: c_int = 1 << (LUA_HOOKCOUNT as uint);
+pub const LUA_MASKCALL: c_int = 1 << (LUA_HOOKCALL as uint);
+pub const LUA_MASKRET: c_int = 1 << (LUA_HOOKRET as uint);
+pub const LUA_MASKLINE: c_int = 1 << (LUA_HOOKLINE as uint);
+pub const LUA_MASKCOUNT: c_int = 1 << (LUA_HOOKCOUNT as uint);
 
 pub type lua_Hook = unsafe extern "C" fn(L: *mut lua_State, ar: *mut lua_Debug);
 
