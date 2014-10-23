@@ -18,24 +18,24 @@ use std::{mem, path, ptr, str, slice};
 use std::c_str::CString;
 
 /// Human-readable major version string
-pub static VERSION: &'static str = config::LUA_VERSION;
+pub const VERSION: &'static str = config::LUA_VERSION;
 /// Human-readable release version string
-pub static RELEASE: &'static str = config::LUA_RELEASE;
+pub const RELEASE: &'static str = config::LUA_RELEASE;
 /// Machine-readable version number
-pub static VERSION_NUM: int = config::LUA_VERSION_NUM as int;
+pub const VERSION_NUM: int = config::LUA_VERSION_NUM as int;
 
 /// Value for lua_call that means return all results
-pub static MULTRET: i32 = raw::MULTRET as i32;
+pub const MULTRET: i32 = raw::MULTRET as i32;
 
 /// Minimum Lua stack available to a C function
-pub static MINSTACK: i32 = config::LUA_MINSTACK as i32;
+pub const MINSTACK: i32 = config::LUA_MINSTACK as i32;
 
 /// Pseudo-index for the registry
-pub static REGISTRYINDEX: i32 = raw::LUA_REGISTRYINDEX as i32;
+pub const REGISTRYINDEX: i32 = raw::LUA_REGISTRYINDEX as i32;
 /// Pseudo-index for the thread environment
-pub static GLOBALSINDEX: i32 = raw::LUA_GLOBALSINDEX as i32;
+pub const GLOBALSINDEX: i32 = raw::LUA_GLOBALSINDEX as i32;
 /// Pseudo-index for the running C function environment
-pub static ENVIRONINDEX: i32 = raw::LUA_ENVIRONINDEX as i32;
+pub const ENVIRONINDEX: i32 = raw::LUA_ENVIRONINDEX as i32;
 
 /// Calculates the pseudo-index for the upvalue at the given index.
 /// Any index in the range [1,256] produces an acceptable index.
@@ -2124,21 +2124,21 @@ impl<'l> RawState<'l> {
 }
 
 /// Name for the coroutine lib
-pub static COLIBNAME: &'static str = lib::raw::LUA_COLIBNAME;
+pub const COLIBNAME: &'static str = lib::raw::LUA_COLIBNAME;
 /// Name for the table lib
-pub static TABLIBNAME: &'static str = lib::raw::LUA_TABLIBNAME;
+pub const TABLIBNAME: &'static str = lib::raw::LUA_TABLIBNAME;
 /// Name for the io lib
-pub static IOLIBNAME: &'static str = lib::raw::LUA_IOLIBNAME;
+pub const IOLIBNAME: &'static str = lib::raw::LUA_IOLIBNAME;
 /// Name for the os lib
-pub static OSLIBNAME: &'static str = lib::raw::LUA_OSLIBNAME;
+pub const OSLIBNAME: &'static str = lib::raw::LUA_OSLIBNAME;
 /// Name for the string lib
-pub static STRLIBNAME: &'static str = lib::raw::LUA_STRLIBNAME;
+pub const STRLIBNAME: &'static str = lib::raw::LUA_STRLIBNAME;
 /// Name for the math lib
-pub static MATHLIBNAME: &'static str = lib::raw::LUA_MATHLIBNAME;
+pub const MATHLIBNAME: &'static str = lib::raw::LUA_MATHLIBNAME;
 /// Name for the debug lib
-pub static DBLIBNAME: &'static str = lib::raw::LUA_DBLIBNAME;
+pub const DBLIBNAME: &'static str = lib::raw::LUA_DBLIBNAME;
 /// Name for the package lib
-pub static LOADLIBNAME: &'static str = lib::raw::LUA_LOADLIBNAME;
+pub const LOADLIBNAME: &'static str = lib::raw::LUA_LOADLIBNAME;
 
 // Functions from lualib
 impl State {
@@ -2309,8 +2309,8 @@ impl<'l> RawState<'l> {
     }
 }
 
-pub static NoRef: i32 = aux::raw::LUA_NOREF as i32;
-pub static RefNil: i32 = aux::raw::LUA_REFNIL as i32;
+pub const NoRef: i32 = aux::raw::LUA_NOREF as i32;
+pub const RefNil: i32 = aux::raw::LUA_REFNIL as i32;
 
 // Functions from auxlib
 impl State {
@@ -3034,7 +3034,7 @@ pub struct Buffer<'a> {
 }
 
 /// Size of the internal buffer used by Buffer and returned by prepbuffer()
-pub static BUFFERSIZE: uint = aux::raw::LUAL_BUFFERSIZE as uint;
+pub const BUFFERSIZE: uint = aux::raw::LUAL_BUFFERSIZE as uint;
 
 impl<'a> Buffer<'a> {
     /// Adds the byte `c` to the buffer.
@@ -3159,13 +3159,13 @@ pub mod DebugEvent {
     }
 
     /// Event mask for HookCall
-    pub static MaskCall: i32 = raw::LUA_MASKCALL as i32;
+    pub const MaskCall: i32 = raw::LUA_MASKCALL as i32;
     /// Event mask for HookRet
-    pub static MaskRet: i32 = raw::LUA_MASKRET as i32;
+    pub const MaskRet: i32 = raw::LUA_MASKRET as i32;
     /// Event mask for HookLine
-    pub static MaskLine: i32 = raw::LUA_MASKLINE as i32;
+    pub const MaskLine: i32 = raw::LUA_MASKLINE as i32;
     /// Event mask for HookCount
-    pub static MaskCount: i32 = raw::LUA_MASKCOUNT as i32;
+    pub const MaskCount: i32 = raw::LUA_MASKCOUNT as i32;
 }
 
 /// Type for functions to be called by the debugger in specific events

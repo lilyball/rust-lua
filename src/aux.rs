@@ -15,12 +15,12 @@ pub mod raw {
     // Don't define luaL_openlib either. That's also obsolete.
 
     // Extra error code for `luaL_load`
-    pub static LUA_ERRFILE: c_int = LUA_ERRERR+1;
+    pub const LUA_ERRFILE: c_int = LUA_ERRERR+1;
 
-    pub static LUAL_BUFFERSIZE: libc::size_t = config::LUAL_BUFFERSIZE;
+    pub const LUAL_BUFFERSIZE: libc::size_t = config::LUAL_BUFFERSIZE;
 
-    pub static LUA_NOREF: c_int = -2;
-    pub static LUA_REFNIL: c_int = -1;
+    pub const LUA_NOREF: c_int = -2;
+    pub const LUA_REFNIL: c_int = -1;
 
     #[allow(non_camel_case_types)]
     #[repr(C)]
