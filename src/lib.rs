@@ -2309,8 +2309,8 @@ impl<'l> RawState<'l> {
     }
 }
 
-pub const NoRef: i32 = aux::raw::LUA_NOREF as i32;
-pub const RefNil: i32 = aux::raw::LUA_REFNIL as i32;
+pub const NOREF: i32 = aux::raw::LUA_NOREF as i32;
+pub const REFNIL: i32 = aux::raw::LUA_REFNIL as i32;
 
 // Functions from auxlib
 impl State {
@@ -3159,13 +3159,13 @@ pub mod DebugEvent {
     }
 
     /// Event mask for HookCall
-    pub const MaskCall: i32 = raw::LUA_MASKCALL as i32;
+    pub const MASKCALL: i32 = raw::LUA_MASKCALL as i32;
     /// Event mask for HookRet
-    pub const MaskRet: i32 = raw::LUA_MASKRET as i32;
+    pub const MASKRET: i32 = raw::LUA_MASKRET as i32;
     /// Event mask for HookLine
-    pub const MaskLine: i32 = raw::LUA_MASKLINE as i32;
+    pub const MASKLINE: i32 = raw::LUA_MASKLINE as i32;
     /// Event mask for HookCount
-    pub const MaskCount: i32 = raw::LUA_MASKCOUNT as i32;
+    pub const MASKCOUNT: i32 = raw::LUA_MASKCOUNT as i32;
 }
 
 /// Type for functions to be called by the debugger in specific events
