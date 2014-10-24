@@ -17,11 +17,11 @@ int main(int argc, char **argv) {
 	printf("extern {}\n\n");
 
 	printf("/// Human-readable major version string\n");
-	printf("pub static LUA_VERSION: &'static str = \"%s\";\n", LUA_VERSION);
+	printf("pub const LUA_VERSION: &'static str = \"%s\";\n", LUA_VERSION);
 	printf("/// Human-readable release version string\n");
-	printf("pub static LUA_RELEASE: &'static str = \"%s\";\n", LUA_RELEASE);
+	printf("pub const LUA_RELEASE: &'static str = \"%s\";\n", LUA_RELEASE);
 	printf("/// Machine-readable Lua version number\n");
-	printf("pub static LUA_VERSION_NUM: libc::c_int = %d;\n\n", LUA_VERSION_NUM);
+	printf("pub const LUA_VERSION_NUM: libc::c_int = %d;\n\n", LUA_VERSION_NUM);
 
 	printf("/// The integral type used by lua_pushinteger/lua_tointeger.\n");
 	printf("pub type LUA_INTEGER = libc::" STR(LUA_INTEGER) ";\n");
@@ -29,17 +29,17 @@ int main(int argc, char **argv) {
 	printf("pub type LUA_NUMBER = libc::c_" STR(LUA_NUMBER) ";\n\n");
 
 	printf("/// LUA_QL describes how error messages quote program elements.\n");
-	printf("pub static LUA_QL: &'static str = \"" LUA_QL("{}") "\";\n\n");
+	printf("pub const LUA_QL: &'static str = \"" LUA_QL("{}") "\";\n\n");
 
 	printf("/// The buffer size used by the lauxlib buffer system.\n");
-	printf("pub static LUAL_BUFFERSIZE: libc::size_t = %d;\n\n", LUAL_BUFFERSIZE);
+	printf("pub const LUAL_BUFFERSIZE: libc::size_t = %d;\n\n", LUAL_BUFFERSIZE);
 
 	printf("/// The maximum size for the description of the source of a function in debug information.\n");
-	printf("pub static LUA_IDSIZE: libc::size_t = %d;\n\n", LUA_IDSIZE);
+	printf("pub const LUA_IDSIZE: libc::size_t = %d;\n\n", LUA_IDSIZE);
 
 	// include LUA_MINSTACK here even though it's not in luaconf.h
 	printf("/// The minimum Lua stack available to a C function.\n");
-	printf("pub static LUA_MINSTACK: libc::size_t = %d;\n", LUA_MINSTACK);
+	printf("pub const LUA_MINSTACK: libc::size_t = %d;\n", LUA_MINSTACK);
 
 	return 0;
 }

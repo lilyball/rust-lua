@@ -2,14 +2,14 @@ pub mod raw {
     use libc::c_int;
     use raw::lua_State;
 
-    pub static LUA_COLIBNAME: &'static str = "coroutine";
-    pub static LUA_TABLIBNAME: &'static str = "table";
-    pub static LUA_IOLIBNAME: &'static str = "io";
-    pub static LUA_OSLIBNAME: &'static str = "os";
-    pub static LUA_STRLIBNAME: &'static str = "string";
-    pub static LUA_MATHLIBNAME: &'static str = "math";
-    pub static LUA_DBLIBNAME: &'static str = "debug";
-    pub static LUA_LOADLIBNAME: &'static str = "package";
+    pub const LUA_COLIBNAME: &'static str = "coroutine";
+    pub const LUA_TABLIBNAME: &'static str = "table";
+    pub const LUA_IOLIBNAME: &'static str = "io";
+    pub const LUA_OSLIBNAME: &'static str = "os";
+    pub const LUA_STRLIBNAME: &'static str = "string";
+    pub const LUA_MATHLIBNAME: &'static str = "math";
+    pub const LUA_DBLIBNAME: &'static str = "debug";
+    pub const LUA_LOADLIBNAME: &'static str = "package";
 
     extern {
         pub fn luaopen_base(L: *mut lua_State) -> c_int;
