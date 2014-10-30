@@ -2829,8 +2829,8 @@ impl<'l> RawState<'l> {
         #![inline]
         extramsg.with_c_str(|msg| {
             aux::raw::luaL_argerror(self.L, narg as c_int, msg);
-            unreachable!()
-        })
+        });
+        unreachable!()
     }
 
     /// Note: the string is returned as 'static to prevent borrowing the
