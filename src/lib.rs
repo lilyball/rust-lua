@@ -348,7 +348,7 @@ impl State {
         extern "C" fn panic(L: *mut raw::lua_State) -> c_int {
             unsafe {
                 let s = RawState::from_lua_State(L).describe_(-1, false);
-                fail!("unprotected error in call to Lua API ({})", s);
+                panic!("unprotected error in call to Lua API ({})", s);
             }
         }
     }
@@ -435,9 +435,9 @@ impl State {
     ///
     /// The panic function can access the error message at the top of the stack.
     ///
-    /// The default panic function installed by this library calls fail!() with
+    /// The default panic function installed by this library calls panic!() with
     /// the error message. Your panic function should either call through to
-    /// the default one, or should fail!() itself. Otherwise, the application
+    /// the default one, or should panic!() itself. Otherwise, the application
     /// will be terminated.
     pub unsafe fn atpanic(&mut self, panicf: CFunction) -> CFunction {
         #![inline(always)]

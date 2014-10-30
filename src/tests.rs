@@ -36,7 +36,7 @@ fn test_errorstr() {
         if s.is_some() {
             assert_eq!(*s.unwrap(), expected);
         } else {
-            fail!("unexpected failure result");
+            panic!("unexpected failure result");
         }
     }
 }

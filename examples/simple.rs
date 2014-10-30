@@ -7,9 +7,9 @@ fn main() {
     L.openlibs();
     match L.loadfile(None) {
         Ok(()) => (),
-        Err(lua::LoadFileError::ErrSyntax) => fail!("syntax error"),
-        Err(lua::LoadFileError::ErrMem) => fail!("memory allocation error"),
-        Err(lua::LoadFileError::ErrFile) => fail!("file error (?!?)")
+        Err(lua::LoadFileError::ErrSyntax) => panic!("syntax error"),
+        Err(lua::LoadFileError::ErrMem) => panic!("memory allocation error"),
+        Err(lua::LoadFileError::ErrFile) => panic!("file error (?!?)")
     }
     L.call(0, 0);
 }
