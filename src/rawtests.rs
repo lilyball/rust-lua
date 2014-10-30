@@ -17,9 +17,9 @@ extern "C" fn alloc_helper(_ud: *mut libc::c_void, ptr: *mut libc::c_void, _osiz
     }
 }
 
-// panic function should fail!() so Lua doesn't abort
+// panic function should panic!() so Lua doesn't abort
 extern "C" fn panic_helper(_L: *mut raw::lua_State) -> libc::c_int {
-    fail!("lua error");
+    panic!("lua error");
 }
 
 #[test]
