@@ -8,7 +8,7 @@
 
 #![feature(macro_rules)]
 
-#![warn(missing_doc)]
+#![warn(missing_docs)]
 #![allow(non_snake_case)]
 
 extern crate libc;
@@ -47,13 +47,13 @@ pub fn upvalueindex(n: i32) -> i32 {
 
 pub mod config;
 
-#[allow(missing_doc)]
+#[allow(missing_docs)]
 pub mod raw;
-#[allow(missing_doc)]
+#[allow(missing_docs)]
 pub mod aux;
 
 #[path = "lualib.rs"]
-#[allow(missing_doc)]
+#[allow(missing_docs)]
 pub mod lib;
 
 mod macro;
@@ -1134,7 +1134,7 @@ impl State {
     }
 }
 
-#[allow(missing_doc)]
+#[allow(missing_docs)]
 impl<'l> ExternState<'l> {
     pub unsafe fn newthread(&mut self) -> State {
         self.as_raw().newthread()
@@ -1617,7 +1617,7 @@ impl<'l> ExternState<'l> {
     }
 }
 
-#[allow(missing_doc)]
+#[allow(missing_docs)]
 impl<'l> RawState<'l> {
     pub unsafe fn newthread(&mut self) -> State {
         #![inline]
@@ -2197,7 +2197,7 @@ impl State {
     }
 }
 
-#[allow(missing_doc)]
+#[allow(missing_docs)]
 impl<'l> ExternState<'l> {
     pub unsafe fn open_base(&mut self) {
         self.checkstack_(2);
@@ -2245,7 +2245,7 @@ impl<'l> ExternState<'l> {
     }
 }
 
-#[allow(missing_doc)]
+#[allow(missing_docs)]
 impl<'l> RawState<'l> {
     pub unsafe fn open_base(&mut self) {
         #![inline]
@@ -2606,7 +2606,7 @@ impl State {
     }
 }
 
-#[allow(missing_doc)]
+#[allow(missing_docs)]
 impl<'l> ExternState<'l> {
     pub unsafe fn registerlib(&mut self, libname: Option<&str>, l: &[(&str,CFunction)]) {
         // internally, luaL_registerlib seems to use 4 stack slots
@@ -2792,7 +2792,7 @@ impl<'l> ExternState<'l> {
     }
 }
 
-#[allow(missing_doc)]
+#[allow(missing_docs)]
 impl<'l> RawState<'l> {
     pub unsafe fn registerlib(&mut self, libname: Option<&str>, l: &[(&str,CFunction)]) {
         #![inline]
@@ -3339,7 +3339,7 @@ impl State {
     }
 }
 
-#[allow(missing_doc)]
+#[allow(missing_docs)]
 impl<'l> ExternState<'l> {
     pub fn getstack(&mut self, level: i32) -> Option<Debug> {
         self.as_raw().getstack(level)
@@ -3395,7 +3395,7 @@ impl<'l> ExternState<'l> {
     }
 }
 
-#[allow(missing_doc)]
+#[allow(missing_docs)]
 impl<'l> RawState<'l> {
     pub fn getstack(&mut self, level: i32) -> Option<Debug> {
         #![inline]
