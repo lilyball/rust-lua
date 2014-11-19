@@ -68,7 +68,7 @@ fn test_openlibs() {
 
     s.openlibs();
     s.getfield(GLOBALSINDEX, "table");
-    assert_eq!(s.type_(-1), Some(Type::Table));
+    assert_eq!(s.type_(-1), Some(Type::Type::Table));
 }
 
 #[deriving(PartialEq,Eq,Show)]
@@ -80,7 +80,7 @@ enum CheckOptionEnum {
 
 #[test]
 fn test_checkoption() {
-    let lst = [("one", COEOne), ("two", COETwo), ("three", COEThree)];
+    let lst = [("one", CheckOptionEnum::COEOne), ("two", CheckOptionEnum::COETwo), ("three", CheckOptionEnum::COEThree)];
 
     let mut s = State::new();
 
@@ -89,7 +89,7 @@ fn test_checkoption() {
         assert_eq!(*s.checkoption(1, None, lst), *v);
         s.pop(1);
     }
-    assert_eq!(*s.checkoption(1, Some("three"), lst), COEThree);
+    assert_eq!(*s.checkoption(1, Some("three"), lst), CheckOptionEnum::COEThree);
 
     let res = task::try(proc() {
         let mut s = State::new();

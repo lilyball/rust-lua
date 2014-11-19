@@ -8,6 +8,7 @@ extern crate libc;
 
 use std::io;
 use std::io::BufferedReader;
+use std::num::{FloatMath};
 
 pub fn repl(L: &mut lua::State) {
     let mut stdin = BufferedReader::new(io::stdin());
@@ -81,7 +82,7 @@ lua_extern_pub! {
     // this function is marked public
     unsafe fn my_tan(L: &mut lua::ExternState) -> i32 {
         let input = L.checknumber(1);
-        let output = input.tan();
+        let output = FloatMath::tan(input);
         L.pushnumber(output);
         1
     }
