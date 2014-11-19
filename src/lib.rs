@@ -16,6 +16,7 @@ extern crate libc;
 use libc::c_int;
 use std::{mem, path, ptr, str, slice};
 use std::c_str::CString;
+use std::num::SignedInt;
 
 /// Human-readable major version string
 pub const VERSION: &'static str = config::LUA_VERSION;
@@ -180,8 +181,8 @@ pub mod LoadError {
     impl fmt::Show for LoadError {
         fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
             match *self {
-                ErrSyntax => f.pad("syntax error"),
-                ErrMem => f.pad("memory allocation error")
+                LoadError::ErrSyntax => f.pad("syntax error"),
+                LoadError::ErrMem => f.pad("memory allocation error")
             }
         }
     }
@@ -207,9 +208,9 @@ pub mod LoadFileError {
     impl fmt::Show for LoadFileError {
         fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
             match *self {
-                ErrSyntax => f.pad("syntax error"),
-                ErrMem => f.pad("memory allocation error"),
-                ErrFile => f.pad("file read/open error")
+                LoadFileError::ErrSyntax => f.pad("syntax error"),
+                LoadFileError::ErrMem => f.pad("memory allocation error"),
+                LoadFileError::ErrFile => f.pad("file read/open error")
             }
         }
     }
@@ -235,9 +236,9 @@ pub mod PCallError {
     /// Converts an error code from `lua_pcall()` into a PCallError
     pub fn from_code(code: c_int) -> Option<PCallError> {
         match code {
-            raw::LUA_ERRRUN => Some(ErrRun),
-            raw::LUA_ERRMEM => Some(ErrMem),
-            raw::LUA_ERRERR => Some(ErrErr),
+            raw::LUA_ERRRUN => Some(PCallError::ErrRun),
+            raw::LUA_ERRMEM => Some(PCallError::ErrMem),
+            raw::LUA_ERRERR => Some(PCallError::ErrErr),
             _ => None,
         }
     }
@@ -245,9 +246,9 @@ pub mod PCallError {
     impl fmt::Show for PCallError {
         fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
             match *self {
-                ErrRun => f.pad("runtime error"),
-                ErrMem => f.pad("memory allocation error"),
-                ErrErr => f.pad("error handler func error")
+                PCallError::ErrRun => f.pad("runtime error"),
+                PCallError::ErrMem => f.pad("memory allocation error"),
+                PCallError::ErrErr => f.pad("error handler func error")
             }
         }
     }
@@ -1172,7 +1173,7 @@ impl<'l> ExternState<'l> {
             }
             _ => {
                 let top = self.gettop();
-                luaassert!(self, idx.abs() <= top, "index {} is not valid (stack top is {})", idx,
+                luaassert!(self, SignedInt::abs(idx) <= top, "index {} is not valid (stack top is {})", idx,
                            top);
             }
         }
@@ -1546,7 +1547,7 @@ impl<'l> ExternState<'l> {
         if n >= 0 {
             luaassert!(self, self.gettop() >= n, "pop: stack underflow");
         } else {
-            luaassert!(self, self.gettop() >= (n+1).abs(), "pop: stack underflow");
+            luaassert!(self, self.gettop() >= SignedInt::abs(n+1), "pop: stack underflow");
         }
         self.as_raw().pop(n)
     }
@@ -1637,24 +1638,24 @@ impl<'l> RawState<'l> {
         match self.type_(idx) {
             None => "".to_string(),
             Some(typ) => match typ {
-                Type::Nil => "nil".to_string(),
-                Type::Boolean => if self.toboolean(idx) { "true".to_string() }
+                Type::Type::Nil => "nil".to_string(),
+                Type::Type::Boolean => if self.toboolean(idx) { "true".to_string() }
                                  else { "false".to_string() },
-                Type::Number => {
+                Type::Type::Number => {
                     // Let Lua create the string instead of us
                     if usestack { self.pushvalue(idx); } // copy the value
                     let s = self.tostring(-1).map(|s| s.to_string());
                     if usestack { self.pop(1); } // remove the copied value
                     s.unwrap_or_default() // default will be ~""
                 }
-                Type::String => {
+                Type::Type::String => {
                     self.tostring(idx).unwrap_or("<invalid utf8>").to_string()
                 }
-                Type::LightUserdata |
-                Type::Userdata |
-                Type::Table |
-                Type::Thread |
-                Type::Function => {
+                Type::Type::LightUserdata |
+                Type::Type::Userdata |
+                Type::Type::Table |
+                Type::Type::Thread |
+                Type::Type::Function => {
                     let s = self.typename(idx);
                     let p = self.topointer(idx);
                     format!("<{} {:p}>", s, p)
@@ -1743,15 +1744,15 @@ impl<'l> RawState<'l> {
         match raw::lua_type(self.L, idx as c_int) {
             raw::LUA_TNONE => None,
 
-            raw::LUA_TNIL           => Some(Type::Nil),
-            raw::LUA_TBOOLEAN       => Some(Type::Boolean),
-            raw::LUA_TLIGHTUSERDATA => Some(Type::LightUserdata),
-            raw::LUA_TNUMBER        => Some(Type::Number),
-            raw::LUA_TSTRING        => Some(Type::String),
-            raw::LUA_TTABLE         => Some(Type::Table),
-            raw::LUA_TFUNCTION      => Some(Type::Function),
-            raw::LUA_TUSERDATA      => Some(Type::Userdata),
-            raw::LUA_TTHREAD        => Some(Type::Thread),
+            raw::LUA_TNIL           => Some(Type::Type::Nil),
+            raw::LUA_TBOOLEAN       => Some(Type::Type::Boolean),
+            raw::LUA_TLIGHTUSERDATA => Some(Type::Type::LightUserdata),
+            raw::LUA_TNUMBER        => Some(Type::Type::Number),
+            raw::LUA_TSTRING        => Some(Type::Type::String),
+            raw::LUA_TTABLE         => Some(Type::Type::Table),
+            raw::LUA_TFUNCTION      => Some(Type::Type::Function),
+            raw::LUA_TUSERDATA      => Some(Type::Type::Userdata),
+            raw::LUA_TTHREAD        => Some(Type::Type::Thread),
 
             _ => self.errorstr("type: Unknown return value from lua_type")
         }
@@ -1980,8 +1981,8 @@ impl<'l> RawState<'l> {
                       -> Result<(),LoadError> {
         match chunkname.with_c_str(|name| raw::lua_load(self.L, reader, data, name)) {
             0 => Ok(()),
-            raw::LUA_ERRSYNTAX => Err(LoadError::ErrSyntax),
-            raw::LUA_ERRMEM => Err(LoadError::ErrMem),
+            raw::LUA_ERRSYNTAX => Err(LoadError::LoadError::ErrSyntax),
+            raw::LUA_ERRMEM => Err(LoadError::LoadError::ErrMem),
             _ => self.errorstr("load: unexpected error from lua_load")
         }
     }
@@ -2955,9 +2956,9 @@ impl<'l> RawState<'l> {
         let ptr = cstr.as_ref().map_or(ptr::null(), |cstr| cstr.as_ptr());
         match aux::raw::luaL_loadfile(self.L, ptr) {
             0 => Ok(()),
-            raw::LUA_ERRSYNTAX => Err(LoadFileError::ErrSyntax),
-            raw::LUA_ERRMEM => Err(LoadFileError::ErrMem),
-            aux::raw::LUA_ERRFILE => Err(LoadFileError::ErrFile),
+            raw::LUA_ERRSYNTAX => Err(LoadFileError::LoadFileError::ErrSyntax),
+            raw::LUA_ERRMEM => Err(LoadFileError::LoadFileError::ErrMem),
+            aux::raw::LUA_ERRFILE => Err(LoadFileError::LoadFileError::ErrFile),
             _ => self.errorstr("loadfile: unexpected error from luaL_loadfile")
         }
     }
@@ -2968,8 +2969,8 @@ impl<'l> RawState<'l> {
         let bsz = buf.len() as libc::size_t;
         match name.with_c_str(|name| aux::raw::luaL_loadbuffer(self.L, bp, bsz, name)) {
             0 => Ok(()),
-            raw::LUA_ERRSYNTAX => Err(LoadError::ErrSyntax),
-            raw::LUA_ERRMEM => Err(LoadError::ErrMem),
+            raw::LUA_ERRSYNTAX => Err(LoadError::LoadError::ErrSyntax),
+            raw::LUA_ERRMEM => Err(LoadError::LoadError::ErrMem),
             _ => self.errorstr("loadbuffer: unexpected error from luaL_loadbuffer")
         }
     }
@@ -2978,8 +2979,8 @@ impl<'l> RawState<'l> {
         #![inline]
         match s.with_c_str(|s| aux::raw::luaL_loadstring(self.L, s)) {
             0 => Ok(()),
-            raw::LUA_ERRSYNTAX => Err(LoadError::ErrSyntax),
-            raw::LUA_ERRMEM => Err(LoadError::ErrMem),
+            raw::LUA_ERRSYNTAX => Err(LoadError::LoadError::ErrSyntax),
+            raw::LUA_ERRMEM => Err(LoadError::LoadError::ErrMem),
             _ => self.errorstr("loadstring: unexpected error from luaL_loadstring")
         }
     }
@@ -3149,11 +3150,11 @@ pub mod DebugEvent {
     /// Converts a c_int event code to a DebugEvent.
     pub fn from_event(event: c_int) -> Option<DebugEvent> {
         match event {
-            raw::LUA_HOOKCALL => Some(HookCall),
-            raw::LUA_HOOKRET => Some(HookRet),
-            raw::LUA_HOOKLINE => Some(HookLine),
-            raw::LUA_HOOKCOUNT => Some(HookCount),
-            raw::LUA_HOOKTAILRET => Some(HookTailRet),
+            raw::LUA_HOOKCALL => Some(DebugEvent::HookCall),
+            raw::LUA_HOOKRET => Some(DebugEvent::HookRet),
+            raw::LUA_HOOKLINE => Some(DebugEvent::HookLine),
+            raw::LUA_HOOKCOUNT => Some(DebugEvent::HookCount),
+            raw::LUA_HOOKTAILRET => Some(DebugEvent::HookTailRet),
             _ => None
         }
     }
