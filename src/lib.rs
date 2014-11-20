@@ -45,7 +45,7 @@ pub fn upvalueindex(n: i32) -> i32 {
     raw::lua_upvalueindex(n as c_int) as i32
 }
 
-pub mod config;
+include!(concat!(env!("OUT_DIR"), "/config.rs"))
 
 #[allow(missing_doc)]
 pub mod raw;

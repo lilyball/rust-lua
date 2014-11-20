@@ -6,15 +6,9 @@
 #define STR(s) STRINGIFY(s)
 
 int main(int argc, char **argv) {
-	const char *libname = "lua";
-	if (argc > 1) libname = argv[1];
-
 	printf("//! Module for configuration based on luaconf.h\n\n");
 	printf("#![allow(non_camel_case_types)]\n\n");
 	printf("extern crate libc;\n\n");
-
-	printf("#[link(name = \"%s\")]\n", libname);
-	printf("extern {}\n\n");
 
 	printf("/// Human-readable major version string\n");
 	printf("pub const LUA_VERSION: &'static str = \"%s\";\n", LUA_VERSION);
