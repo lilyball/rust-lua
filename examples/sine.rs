@@ -8,6 +8,7 @@ extern crate libc;
 
 use std::io;
 use std::io::BufferedReader;
+use std::num::FloatMath;
 
 pub fn repl(L: &mut lua::State) {
     let mut stdin = BufferedReader::new(io::stdin());

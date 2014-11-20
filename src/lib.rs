@@ -8,14 +8,15 @@
 
 #![feature(macro_rules)]
 
-#![warn(missing_doc)]
+#![warn(missing_docs)]
 #![allow(non_snake_case)]
 
 extern crate libc;
 
 use libc::c_int;
-use std::{mem, path, ptr, str, slice};
+use std::{fmt, mem, path, ptr, str, slice};
 use std::c_str::CString;
+use std::num::SignedInt;
 
 /// Human-readable major version string
 pub const VERSION: &'static str = config::LUA_VERSION;
@@ -47,13 +48,13 @@ pub fn upvalueindex(n: i32) -> i32 {
 
 include!(concat!(env!("OUT_DIR"), "/config.rs"))
 
-#[allow(missing_doc)]
+#[allow(missing_docs)]
 pub mod raw;
-#[allow(missing_doc)]
+#[allow(missing_docs)]
 pub mod aux;
 
 #[path = "lualib.rs"]
-#[allow(missing_doc)]
+#[allow(missing_docs)]
 pub mod lib;
 
 mod macro;
@@ -75,80 +76,65 @@ macro_rules! luaassert{
     }
 }
 
-/// Lua value type
-pub type Type = Type::Type;
-pub mod Type {
-    //! Lua value type mod
-    use raw;
-    use libc;
-    use std::{ptr, str};
+/// Lua value types
+#[deriving(Clone,PartialEq,Eq,Show)]
+pub enum Type {
+    /// Type for nil
+    Nil = raw::LUA_TNIL as int,
+    /// Type for booleans
+    Boolean = raw::LUA_TBOOLEAN as int,
+    /// Type for light userdata
+    LightUserdata = raw::LUA_TLIGHTUSERDATA as int,
+    /// Type for numbers
+    Number = raw::LUA_TNUMBER as int,
+    /// Type for strings
+    String = raw::LUA_TSTRING as int,
+    /// Type for tables
+    Table = raw::LUA_TTABLE as int,
+    /// Type for functions
+    Function = raw::LUA_TFUNCTION as int,
+    /// Type for userdata
+    Userdata = raw::LUA_TUSERDATA as int,
+    /// Type for threads
+    Thread = raw::LUA_TTHREAD as int
+}
 
-    /// Lua value types
-    #[deriving(Clone,PartialEq,Eq,Show)]
-    pub enum Type {
-        /// Type for nil
-        Nil = raw::LUA_TNIL as int,
-        /// Type for booleans
-        Boolean = raw::LUA_TBOOLEAN as int,
-        /// Type for light userdata
-        LightUserdata = raw::LUA_TLIGHTUSERDATA as int,
-        /// Type for numbers
-        Number = raw::LUA_TNUMBER as int,
-        /// Type for strings
-        String = raw::LUA_TSTRING as int,
-        /// Type for tables
-        Table = raw::LUA_TTABLE as int,
-        /// Type for functions
-        Function = raw::LUA_TFUNCTION as int,
-        /// Type for userdata
-        Userdata = raw::LUA_TUSERDATA as int,
-        /// Type for threads
-        Thread = raw::LUA_TTHREAD as int
-    }
-
-    impl Type {
-        /// Returns the name of the type
-        pub fn name(&self) -> &'static str {
-            unsafe {
-                // NB: lua_typename() doesn't actually use its state parameter
-                let s = raw::lua_typename(ptr::null_mut(), *self as libc::c_int);
-                str::raw::c_str_to_static_slice(s)
-            }
+impl Type {
+    /// Returns the name of the type
+    pub fn name(&self) -> &'static str {
+        unsafe {
+            // NB: lua_typename() doesn't actually use its state parameter
+            let s = raw::lua_typename(ptr::null_mut(), *self as libc::c_int);
+            str::raw::c_str_to_static_slice(s)
         }
     }
 }
 
-/// Garbage collection option
-pub type GC = GC::GC;
-pub mod GC {
-    //! Garbage collection option mod
-    use raw;
-    /// Garbage collection options (used with State.gc())
-    #[allow(dead_code)] // FIXME(rust-lang/rust#17632): dead_code warning is wrong here
-    pub enum GC {
-        /// Stops the garbage collector
-        Stop = raw::LUA_GCSTOP as int,
-        /// Restarts the garbage collector
-        Restart = raw::LUA_GCRESTART as int,
-        /// Performs a full garbage-collection cycle
-        Collect = raw::LUA_GCCOLLECT as int,
-        /// Returns the current amount of memory (in Kbytes) in use by Lua
-        Count = raw::LUA_GCCOUNT as int,
-        /// Returns the remainder of dividing the current amount of bytes in memory in use by Lua
-        /// by 1024
-        CountB = raw::LUA_GCCOUNTB as int,
-        /// Performs an incremental step of garbage collection. The step "size" is controlled by
-        /// `data` (larger values mean more steps) in a non-specified way. If you want to control
-        /// the step size you must experimentally tune hte value of `data`. The function returns
-        /// 1 if the step finished a garbage-collection cycle.
-        Step = raw::LUA_GCSTEP as int,
-        /// Sets `data` as the new value for the pause of the collector. The function returns the
-        /// previous value of the pause.
-        SetPause = raw::LUA_GCSETPAUSE as int,
-        /// Sets `data` as the new value for the step multiplier of the collector. The function
-        /// returns the previous value of the step multiplier.
-        SetStepMul = raw::LUA_GCSETSTEPMUL as int
-    }
+/// Garbage collection options (used with State.gc())
+//#[allow(dead_code)] // FIXME(rust-lang/rust#17632): dead_code warning is wrong here
+pub enum GC {
+    /// Stops the garbage collector
+    Stop = raw::LUA_GCSTOP as int,
+    /// Restarts the garbage collector
+    Restart = raw::LUA_GCRESTART as int,
+    /// Performs a full garbage-collection cycle
+    Collect = raw::LUA_GCCOLLECT as int,
+    /// Returns the current amount of memory (in Kbytes) in use by Lua
+    Count = raw::LUA_GCCOUNT as int,
+    /// Returns the remainder of dividing the current amount of bytes in memory in use by Lua
+    /// by 1024
+    CountB = raw::LUA_GCCOUNTB as int,
+    /// Performs an incremental step of garbage collection. The step "size" is controlled by
+    /// `data` (larger values mean more steps) in a non-specified way. If you want to control
+    /// the step size you must experimentally tune hte value of `data`. The function returns
+    /// 1 if the step finished a garbage-collection cycle.
+    Step = raw::LUA_GCSTEP as int,
+    /// Sets `data` as the new value for the pause of the collector. The function returns the
+    /// previous value of the pause.
+    SetPause = raw::LUA_GCSETPAUSE as int,
+    /// Sets `data` as the new value for the step multiplier of the collector. The function
+    /// returns the previous value of the step multiplier.
+    SetStepMul = raw::LUA_GCSETSTEPMUL as int
 }
 
 /// Type that represents C functions that can be registered with Lua.
@@ -164,91 +150,70 @@ pub type Writer = raw::lua_Writer;
 pub type Alloc = raw::lua_Alloc;
 
 /// State.load() errors
-pub type LoadError = LoadError::LoadError;
-pub mod LoadError {
-    //! State.load() error mod
-    use raw;
-    use std::fmt;
-    /// State.load() errors
-    pub enum LoadError {
-        /// Syntax error during pre-compilation
-        ErrSyntax = raw::LUA_ERRSYNTAX as int,
-        /// Memory allocation error
-        ErrMem = raw::LUA_ERRMEM as int
-    }
+pub enum LoadError {
+    /// Syntax error during pre-compilation
+    ErrSyntax = raw::LUA_ERRSYNTAX as int,
+    /// Memory allocation error
+    ErrMem = raw::LUA_ERRMEM as int
+}
 
-    impl fmt::Show for LoadError {
-        fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-            match *self {
-                ErrSyntax => f.pad("syntax error"),
-                ErrMem => f.pad("memory allocation error")
-            }
+impl fmt::Show for LoadError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            LoadError::ErrSyntax => f.pad("syntax error"),
+            LoadError::ErrMem => f.pad("memory allocation error")
         }
     }
 }
 
 /// State.loadfile() errors
-pub type LoadFileError = LoadFileError::LoadFileError;
-pub mod LoadFileError {
-    //! State.loadfile() error mod
-    use aux;
-    use raw;
-    use std::fmt;
-    /// State.loadfile() errors
-    pub enum LoadFileError {
-        /// Syntax error during pre-compilation
-        ErrSyntax = raw::LUA_ERRSYNTAX as int,
-        /// Memory allocation error
-        ErrMem = raw::LUA_ERRMEM as int,
-        /// Cannot read/open the file
-        ErrFile = aux::raw::LUA_ERRFILE as int
-    }
+pub enum LoadFileError {
+    /// Syntax error during pre-compilation
+    ErrSyntax = raw::LUA_ERRSYNTAX as int,
+    /// Memory allocation error
+    ErrMem = raw::LUA_ERRMEM as int,
+    /// Cannot read/open the file
+    ErrFile = aux::raw::LUA_ERRFILE as int
+}
 
-    impl fmt::Show for LoadFileError {
-        fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-            match *self {
-                ErrSyntax => f.pad("syntax error"),
-                ErrMem => f.pad("memory allocation error"),
-                ErrFile => f.pad("file read/open error")
-            }
+impl fmt::Show for LoadFileError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            LoadFileError::ErrSyntax => f.pad("syntax error"),
+            LoadFileError::ErrMem => f.pad("memory allocation error"),
+            LoadFileError::ErrFile => f.pad("file read/open error")
         }
     }
 }
 
 /// State.pcall() errors
-pub type PCallError = PCallError::PCallError;
-pub mod PCallError {
-    //! State.pcall() error mod
-    use raw;
-    use libc::c_int;
-    use std::fmt;
-    /// State.pcall() errors
-    pub enum PCallError {
-        /// Runtime error
-        ErrRun = raw::LUA_ERRRUN as int,
-        /// Memory allocation error
-        ErrMem = raw::LUA_ERRMEM as int,
-        /// Error while running the error handler function
-        ErrErr = raw::LUA_ERRERR as int
-    }
+pub enum PCallError {
+    /// Runtime error
+    ErrRun = raw::LUA_ERRRUN as int,
+    /// Memory allocation error
+    ErrMem = raw::LUA_ERRMEM as int,
+    /// Error while running the error handler function
+    ErrErr = raw::LUA_ERRERR as int
+}
 
+impl PCallError {
     /// Converts an error code from `lua_pcall()` into a PCallError
     pub fn from_code(code: c_int) -> Option<PCallError> {
         match code {
-            raw::LUA_ERRRUN => Some(ErrRun),
-            raw::LUA_ERRMEM => Some(ErrMem),
-            raw::LUA_ERRERR => Some(ErrErr),
+            raw::LUA_ERRRUN => Some(PCallError::ErrRun),
+            raw::LUA_ERRMEM => Some(PCallError::ErrMem),
+            raw::LUA_ERRERR => Some(PCallError::ErrErr),
             _ => None,
         }
     }
+}
 
-    impl fmt::Show for PCallError {
-        fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-            match *self {
-                ErrRun => f.pad("runtime error"),
-                ErrMem => f.pad("memory allocation error"),
-                ErrErr => f.pad("error handler func error")
-            }
+impl fmt::Show for PCallError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            PCallError::ErrRun => f.pad("runtime error"),
+            PCallError::ErrMem => f.pad("memory allocation error"),
+            PCallError::ErrErr => f.pad("error handler func error")
         }
     }
 }
@@ -1134,7 +1099,7 @@ impl State {
     }
 }
 
-#[allow(missing_doc)]
+#[allow(missing_docs)]
 impl<'l> ExternState<'l> {
     pub unsafe fn newthread(&mut self) -> State {
         self.as_raw().newthread()
@@ -1617,7 +1582,7 @@ impl<'l> ExternState<'l> {
     }
 }
 
-#[allow(missing_doc)]
+#[allow(missing_docs)]
 impl<'l> RawState<'l> {
     pub unsafe fn newthread(&mut self) -> State {
         #![inline]
@@ -2197,7 +2162,7 @@ impl State {
     }
 }
 
-#[allow(missing_doc)]
+#[allow(missing_docs)]
 impl<'l> ExternState<'l> {
     pub unsafe fn open_base(&mut self) {
         self.checkstack_(2);
@@ -2245,7 +2210,7 @@ impl<'l> ExternState<'l> {
     }
 }
 
-#[allow(missing_doc)]
+#[allow(missing_docs)]
 impl<'l> RawState<'l> {
     pub unsafe fn open_base(&mut self) {
         #![inline]
@@ -2606,7 +2571,7 @@ impl State {
     }
 }
 
-#[allow(missing_doc)]
+#[allow(missing_docs)]
 impl<'l> ExternState<'l> {
     pub unsafe fn registerlib(&mut self, libname: Option<&str>, l: &[(&str,CFunction)]) {
         // internally, luaL_registerlib seems to use 4 stack slots
@@ -2792,7 +2757,7 @@ impl<'l> ExternState<'l> {
     }
 }
 
-#[allow(missing_doc)]
+#[allow(missing_docs)]
 impl<'l> RawState<'l> {
     pub unsafe fn registerlib(&mut self, libname: Option<&str>, l: &[(&str,CFunction)]) {
         #![inline]
@@ -3055,7 +3020,7 @@ impl<'a> Buffer<'a> {
     pub unsafe fn addchar(&mut self, c: char) {
         #![inline]
         let mut buf = [0u8, ..4];
-        let count = c.encode_utf8(buf).unwrap();
+        let count = c.encode_utf8(&mut buf).unwrap();
         self.addbytes(buf.slice_to(count));
     }
 
@@ -3120,53 +3085,48 @@ impl<'a> Buffer<'a> {
 
 /* Debug API */
 /// Event codes
-pub type DebugEvent = DebugEvent::DebugEvent;
-pub mod DebugEvent {
-    //! Mod for event codes
-    use raw;
-    use libc::c_int;
-    /// Event codes
-    pub enum DebugEvent {
-        /// The call hook is called when the interpreter calls a function. The hook is called
-        /// just after Lua enters the new function, before the function gets its arguments.
-        HookCall = raw::LUA_HOOKCALL as int,
-        /// The return hook is called when the interpreter returns from a function. The hook is
-        /// called just before Lua leaves the function. You have no access to the values to be
-        /// returned by the function.
-        HookRet = raw::LUA_HOOKRET as int,
-        /// The line hook is called when the interpreter is about to start the execution of a new
-        /// line of code, or when it jumps back in the code (even to the same line).
-        /// (This event only happens while Lua is executing a Lua function.)
-        HookLine = raw::LUA_HOOKLINE as int,
-        /// The count hook is called after the interpreter executes every `count` instructions.
-        /// (This event only happens while Lua is executing a Lua function.)
-        HookCount = raw::LUA_HOOKCOUNT as int,
-        /// The tailret event is used when a HookRet hook is called while simulating a return from
-        /// a function that did a tail call; in this case, it is useless to call getinfo().
-        HookTailRet = raw::LUA_HOOKTAILRET as int
-    }
+pub enum DebugEvent {
+    /// The call hook is called when the interpreter calls a function. The hook is called
+    /// just after Lua enters the new function, before the function gets its arguments.
+    HookCall = raw::LUA_HOOKCALL as int,
+    /// The return hook is called when the interpreter returns from a function. The hook is
+    /// called just before Lua leaves the function. You have no access to the values to be
+    /// returned by the function.
+    HookRet = raw::LUA_HOOKRET as int,
+    /// The line hook is called when the interpreter is about to start the execution of a new
+    /// line of code, or when it jumps back in the code (even to the same line).
+    /// (This event only happens while Lua is executing a Lua function.)
+    HookLine = raw::LUA_HOOKLINE as int,
+    /// The count hook is called after the interpreter executes every `count` instructions.
+    /// (This event only happens while Lua is executing a Lua function.)
+    HookCount = raw::LUA_HOOKCOUNT as int,
+    /// The tailret event is used when a HookRet hook is called while simulating a return from
+    /// a function that did a tail call; in this case, it is useless to call getinfo().
+    HookTailRet = raw::LUA_HOOKTAILRET as int
+}
 
+impl DebugEvent {
     /// Converts a c_int event code to a DebugEvent.
     pub fn from_event(event: c_int) -> Option<DebugEvent> {
         match event {
-            raw::LUA_HOOKCALL => Some(HookCall),
-            raw::LUA_HOOKRET => Some(HookRet),
-            raw::LUA_HOOKLINE => Some(HookLine),
-            raw::LUA_HOOKCOUNT => Some(HookCount),
-            raw::LUA_HOOKTAILRET => Some(HookTailRet),
+            raw::LUA_HOOKCALL => Some(DebugEvent::HookCall),
+            raw::LUA_HOOKRET => Some(DebugEvent::HookRet),
+            raw::LUA_HOOKLINE => Some(DebugEvent::HookLine),
+            raw::LUA_HOOKCOUNT => Some(DebugEvent::HookCount),
+            raw::LUA_HOOKTAILRET => Some(DebugEvent::HookTailRet),
             _ => None
         }
     }
-
-    /// Event mask for HookCall
-    pub const MASKCALL: i32 = raw::LUA_MASKCALL as i32;
-    /// Event mask for HookRet
-    pub const MASKRET: i32 = raw::LUA_MASKRET as i32;
-    /// Event mask for HookLine
-    pub const MASKLINE: i32 = raw::LUA_MASKLINE as i32;
-    /// Event mask for HookCount
-    pub const MASKCOUNT: i32 = raw::LUA_MASKCOUNT as i32;
 }
+
+/// Event mask for HookCall
+pub const MASKCALL: i32 = raw::LUA_MASKCALL as i32;
+/// Event mask for HookRet
+pub const MASKRET: i32 = raw::LUA_MASKRET as i32;
+/// Event mask for HookLine
+pub const MASKLINE: i32 = raw::LUA_MASKLINE as i32;
+/// Event mask for HookCount
+pub const MASKCOUNT: i32 = raw::LUA_MASKCOUNT as i32;
 
 /// Type for functions to be called by the debugger in specific events
 pub type Hook = raw::lua_Hook;
@@ -3339,7 +3299,7 @@ impl State {
     }
 }
 
-#[allow(missing_doc)]
+#[allow(missing_docs)]
 impl<'l> ExternState<'l> {
     pub fn getstack(&mut self, level: i32) -> Option<Debug> {
         self.as_raw().getstack(level)
@@ -3395,7 +3355,7 @@ impl<'l> ExternState<'l> {
     }
 }
 
-#[allow(missing_doc)]
+#[allow(missing_docs)]
 impl<'l> RawState<'l> {
     pub fn getstack(&mut self, level: i32) -> Option<Debug> {
         #![inline]

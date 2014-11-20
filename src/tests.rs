@@ -73,33 +73,35 @@ fn test_openlibs() {
 
 #[deriving(PartialEq,Eq,Show)]
 enum CheckOptionEnum {
-    COEOne,
-    COETwo,
-    COEThree
+    One,
+    Two,
+    Three
 }
 
 #[test]
 fn test_checkoption() {
-    let lst = [("one", COEOne), ("two", COETwo), ("three", COEThree)];
+    let lst = [("one", CheckOptionEnum::One),
+               ("two", CheckOptionEnum::Two),
+               ("three", CheckOptionEnum::Three)];
 
     let mut s = State::new();
 
     for &(k,ref v) in lst.iter() {
         s.pushstring(k);
-        assert_eq!(*s.checkoption(1, None, lst), *v);
+        assert_eq!(*s.checkoption(1, None, &lst), *v);
         s.pop(1);
     }
-    assert_eq!(*s.checkoption(1, Some("three"), lst), COEThree);
+    assert_eq!(*s.checkoption(1, Some("three"), &lst), CheckOptionEnum::Three);
 
     let res = task::try(proc() {
         let mut s = State::new();
-        s.checkoption(1, None, lst);
+        s.checkoption(1, None, &lst);
     });
     assert!(res.is_err(), "expected error from checkoption");
 
     let res = task::try(proc() {
         let mut s = State::new();
-        s.checkoption(1, Some("four"), lst);
+        s.checkoption(1, Some("four"), &lst);
     });
     assert!(res.is_err(), "expected error from checkoption");
 }
