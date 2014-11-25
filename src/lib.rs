@@ -105,7 +105,7 @@ impl Type {
         unsafe {
             // NB: lua_typename() doesn't actually use its state parameter
             let s = raw::lua_typename(ptr::null_mut(), *self as libc::c_int);
-            str::raw::c_str_to_static_slice(s)
+            str::from_c_str(s)
         }
     }
 }
@@ -1725,7 +1725,7 @@ impl<'l> RawState<'l> {
     pub unsafe fn typename(&mut self, idx: i32) -> &'static str {
         #![inline]
         let s = aux::raw::luaL_typename(self.L, idx as c_int);
-        str::raw::c_str_to_static_slice(s)
+        str::from_c_str(s)
     }
 
     pub unsafe fn equal(&mut self, index1: i32, index2: i32) -> bool {
@@ -1774,9 +1774,8 @@ impl<'l> RawState<'l> {
         if s.is_null() {
             None
         } else {
-            slice::raw::buf_as_slice(s as *const u8, sz as uint, |b| {
-                Some(mem::transmute::<&[u8], &'static [u8]>(b))
-            })
+            let buf = s as *const u8;
+            Some(mem::transmute::<&[u8], &'static [u8]>(slice::from_raw_buf(&buf, sz as uint)))
         }
     }
 
@@ -2811,9 +2810,8 @@ impl<'l> RawState<'l> {
         #![inline]
         let mut sz: libc::size_t = 0;
         let s = aux::raw::luaL_checklstring(self.L, narg, &mut sz);
-        slice::raw::buf_as_slice(s as *const u8, sz as uint, |b| {
-            mem::transmute::<&[u8], &'static [u8]>(b)
-        })
+        let buf = s as *const u8;
+        mem::transmute::<&[u8], &'static [u8]>(slice::from_raw_buf(&buf, sz as uint))
     }
 
     /// Note: the string is returned as 'static to prevent borrowing the
@@ -2824,14 +2822,13 @@ impl<'l> RawState<'l> {
     }
 
     /// Note: the byte vector is returned as 'static to prevent borrowing the
-    /// RawState, but its lifetime is actually that of hte value on the stack.
+    /// RawState, but its lifetime is actually that of the value on the stack.
     pub unsafe fn optbytes(&mut self, narg: i32, d: &'static [u8]) -> &'static [u8] {
         #![inline]
         let mut sz: libc::size_t = 0;
         let s = d.with_c_str(|d| aux::raw::luaL_optlstring(self.L, narg, d, &mut sz));
-        slice::raw::buf_as_slice(s as *const u8, sz as uint, |b| {
-            mem::transmute::<&[u8], &'static [u8]>(b)
-        })
+        let buf = s as *const u8;
+        mem::transmute::<&[u8], &'static [u8]>(slice::from_raw_buf(&buf, sz as uint))
     }
 
     pub unsafe fn checknumber(&mut self, narg: i32) -> f64 {
