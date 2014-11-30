@@ -2,4 +2,7 @@
 name = "lua"
 version = "0.1.0"
 authors = [ "kevin@sb.org" ]
+description = "Lua 5.1 bindings for Rust"
+license = "MIT"
+readme = "README.md"
 build = "build.rs"

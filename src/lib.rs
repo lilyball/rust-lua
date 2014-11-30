@@ -2,8 +2,6 @@
 
 #![crate_name = "lua"]
 
-#![comment = "Lua 5.1 bindings for Rust"]
-#![license = "MIT"]
 #![crate_type = "rlib"]
 
 #![feature(macro_rules)]
