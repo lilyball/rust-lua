@@ -24,6 +24,7 @@ pub mod raw {
 
     #[allow(non_camel_case_types)]
     #[repr(C)]
+    #[allow(missing_copy_implementations)]
     pub struct luaL_Reg {
         pub name: *const libc::c_char,
         pub func: Option<lua_CFunction>
@@ -142,7 +143,7 @@ pub mod raw {
 
     // Generic Buffer manipulation
 
-    #[allow(non_camel_case_types)]
+    #[allow(non_camel_case_types,missing_copy_implementations)]
     #[repr(C)]
     pub struct luaL_Buffer {
         pub p: *mut libc::c_char, // current position in buffer

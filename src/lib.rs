@@ -75,7 +75,7 @@ macro_rules! luaassert{
 }
 
 /// Lua value types
-#[deriving(Clone,PartialEq,Eq,Show)]
+#[deriving(Clone,Copy,PartialEq,Eq,Show)]
 pub enum Type {
     /// Type for nil
     Nil = raw::LUA_TNIL as int,
@@ -110,6 +110,7 @@ impl Type {
 
 /// Garbage collection options (used with State.gc())
 //#[allow(dead_code)] // FIXME(rust-lang/rust#17632): dead_code warning is wrong here
+#[deriving(Copy)]
 pub enum GC {
     /// Stops the garbage collector
     Stop = raw::LUA_GCSTOP as int,
@@ -148,6 +149,7 @@ pub type Writer = raw::lua_Writer;
 pub type Alloc = raw::lua_Alloc;
 
 /// State.load() errors
+#[deriving(Copy)]
 pub enum LoadError {
     /// Syntax error during pre-compilation
     ErrSyntax = raw::LUA_ERRSYNTAX as int,
@@ -165,6 +167,7 @@ impl fmt::Show for LoadError {
 }
 
 /// State.loadfile() errors
+#[deriving(Copy)]
 pub enum LoadFileError {
     /// Syntax error during pre-compilation
     ErrSyntax = raw::LUA_ERRSYNTAX as int,
@@ -185,6 +188,7 @@ impl fmt::Show for LoadFileError {
 }
 
 /// State.pcall() errors
+#[deriving(Copy)]
 pub enum PCallError {
     /// Runtime error
     ErrRun = raw::LUA_ERRRUN as int,
@@ -3080,6 +3084,7 @@ impl<'a> Buffer<'a> {
 
 /* Debug API */
 /// Event codes
+#[deriving(Copy)]
 pub enum DebugEvent {
     /// The call hook is called when the interpreter calls a function. The hook is called
     /// just after Lua enters the new function, before the function gets its arguments.
