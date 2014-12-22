@@ -44,7 +44,7 @@ pub fn upvalueindex(n: i32) -> i32 {
     raw::lua_upvalueindex(n as c_int) as i32
 }
 
-include!(concat!(env!("OUT_DIR"), "/config.rs"))
+include!(concat!(env!("OUT_DIR"), "/config.rs"));
 
 #[allow(missing_docs)]
 pub mod raw;
@@ -2900,7 +2900,7 @@ impl<'l> RawState<'l> {
         }
         lstv.push(ptr::null());
         let i = aux::raw::luaL_checkoption(self.L, narg as c_int, defp, lstv.as_ptr()) as uint;
-        lst[i].ref1()
+        & lst[i].1
     }
 
     pub unsafe fn ref_(&mut self, t: i32) -> i32 {

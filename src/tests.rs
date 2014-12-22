@@ -4,8 +4,10 @@ use Type;
 use raw;
 
 use libc;
-use std::task;
+use std::thread::Thread;
 use std::any::AnyRefExt;
+use std::any::Any;
+use std::sync::Arc;
 
 #[test]
 fn test_state_init() {
@@ -22,10 +24,10 @@ fn test_error() {
 
 #[test]
 fn test_errorstr() {
-    let res = task::try::<()>(proc() {
+    let res : Result<(), Box<Any + Send>>  = Thread::spawn(move || {
         let mut s = State::new();
         s.errorstr("some err");
-    });
+    }).join(); 
     let err = res.unwrap_err();
     let expected = "unprotected error in call to Lua API (some err)";
     let s = err.downcast_ref::<String>();
@@ -93,16 +95,19 @@ fn test_checkoption() {
     }
     assert_eq!(*s.checkoption(1, Some("three"), &lst), CheckOptionEnum::Three);
 
-    let res = task::try(proc() {
+    let lst_arc1 = Arc::new(lst);
+    let lst_arc2 = lst_arc1.clone();
+        
+    let res = Thread::spawn(move || {
         let mut s = State::new();
-        s.checkoption(1, None, &lst);
-    });
+        s.checkoption(1, None, &*lst_arc1);
+    }).join();
     assert!(res.is_err(), "expected error from checkoption");
-
-    let res = task::try(proc() {
+   
+    let res = Thread::spawn(move || {
         let mut s = State::new();
-        s.checkoption(1, Some("four"), &lst);
-    });
+        s.checkoption(1, Some("four"), &*lst_arc2);
+    }).join();
     assert!(res.is_err(), "expected error from checkoption");
 }
 
