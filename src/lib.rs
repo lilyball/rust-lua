@@ -1762,9 +1762,10 @@ impl<'l> RawState<'l> {
 
     /// Note: the string is returned as 'static to prevent borrowing the
     /// RawState, but its lifetime is actually that of the value on the stack.
+    // TODO: change return type to use core::str::Utf8Error
     pub unsafe fn tostring(&mut self, idx: i32) -> Option<&'static str> {
         #![inline]
-        self.tobytes(idx).and_then(|v| str::from_utf8(v))
+        self.tobytes(idx).and_then(|v| str::from_utf8(v).ok())
     }
 
     /// Note: the byte vector is returned as 'static to prevent borrowing the
@@ -2801,9 +2802,10 @@ impl<'l> RawState<'l> {
 
     /// Note: the string is returned as 'static to prevent borrowing the
     /// RawState, but its lifetime is actually that of the value on the stack.
+    // TODO: change return type to use core::str::Utf8Error
     pub unsafe fn checkstring(&mut self, narg: i32) -> Option<&'static str> {
         #![inline]
-        str::from_utf8(self.checkbytes(narg))
+        str::from_utf8(self.checkbytes(narg)).ok()
     }
 
     /// Note: the byte vector is returned as 'static to prevent borrowing the
@@ -2818,9 +2820,10 @@ impl<'l> RawState<'l> {
 
     /// Note: the string is returned as 'static to prevent borrowing the
     /// RawState, but its lifetime is actually that of the value on the stack.
+    // TODO: change return type to use core::str::Utf8Error
     pub unsafe fn optstring(&mut self, narg: i32, d: &'static str) -> Option<&'static str> {
         #![inline]
-        str::from_utf8(self.optbytes(narg, d.as_bytes()))
+        str::from_utf8(self.optbytes(narg, d.as_bytes())).ok()
     }
 
     /// Note: the byte vector is returned as 'static to prevent borrowing the
