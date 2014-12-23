@@ -6,7 +6,6 @@ use raw;
 use libc;
 use std::thread::Thread;
 use std::any::AnyRefExt;
-use std::sync::Arc;
 
 #[test]
 fn test_state_init() {
@@ -72,7 +71,7 @@ fn test_openlibs() {
     assert_eq!(s.type_(-1), Some(Type::Table));
 }
 
-#[deriving(PartialEq,Eq,Show)]
+#[deriving(Copy,PartialEq,Eq,Show)]
 enum CheckOptionEnum {
     One,
     Two,
@@ -94,18 +93,15 @@ fn test_checkoption() {
     }
     assert_eq!(*s.checkoption(1, Some("three"), &lst), CheckOptionEnum::Three);
 
-    let lst_arc1 = Arc::new(lst);
-    let lst_arc2 = lst_arc1.clone();
-
     let res = Thread::spawn(move || {
         let mut s = State::new();
-        s.checkoption(1, None, &*lst_arc1);
+        s.checkoption(1, None, &lst);
     }).join();
     assert!(res.is_err(), "expected error from checkoption");
 
     let res = Thread::spawn(move || {
         let mut s = State::new();
-        s.checkoption(1, Some("four"), &*lst_arc2);
+        s.checkoption(1, Some("four"), &lst);
     }).join();
     assert!(res.is_err(), "expected error from checkoption");
 }
