@@ -2900,7 +2900,7 @@ impl<'l> RawState<'l> {
         }
         lstv.push(ptr::null());
         let i = aux::raw::luaL_checkoption(self.L, narg as c_int, defp, lstv.as_ptr()) as uint;
-        & lst[i].1
+        &lst[i].1
     }
 
     pub unsafe fn ref_(&mut self, t: i32) -> i32 {
