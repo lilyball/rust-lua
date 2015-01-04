@@ -149,7 +149,7 @@ pub mod raw {
         pub p: *mut libc::c_char, // current position in buffer
         pub lvl: c_int, // number of strings in the stack (level)
         pub L: *mut lua_State,
-        pub buffer: [libc::c_char, ..LUAL_BUFFERSIZE as uint]
+        pub buffer: [libc::c_char; LUAL_BUFFERSIZE as uint]
     }
 
     #[inline(always)]

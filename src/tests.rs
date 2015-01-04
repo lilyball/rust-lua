@@ -71,7 +71,7 @@ fn test_openlibs() {
     assert_eq!(s.type_(-1), Some(Type::Table));
 }
 
-#[deriving(Copy,PartialEq,Eq,Show)]
+#[derive(Copy,PartialEq,Eq,Show)]
 enum CheckOptionEnum {
     One,
     Two,

@@ -311,7 +311,7 @@ pub struct lua_Debug {
     /// The line number where the definition of the function ends.
     pub lastlinedefined: c_int, /* (S) */
     /// A "printable" version of `source`, to be used in error messages.
-    pub short_src: [libc::c_char, ..config::LUA_IDSIZE as uint], /* (S) */
+    pub short_src: [libc::c_char; config::LUA_IDSIZE as uint], /* (S) */
     /* private part */
     i_ci: c_int /* active function */
 }
@@ -328,7 +328,7 @@ impl default::Default for lua_Debug {
             nups: 0,
             linedefined: 0,
             lastlinedefined: 0,
-            short_src: [0, ..config::LUA_IDSIZE as uint],
+            short_src: [0; config::LUA_IDSIZE as uint],
             i_ci: 0
         }
     }

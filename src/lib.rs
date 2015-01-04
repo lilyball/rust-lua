@@ -13,7 +13,7 @@ extern crate libc;
 
 use libc::c_int;
 use std::{fmt, mem, path, ptr, str, slice};
-use std::c_str::CString;
+use std::c_str::{CString, ToCStr};
 use std::num::SignedInt;
 
 /// Human-readable major version string
@@ -75,7 +75,7 @@ macro_rules! luaassert{
 }
 
 /// Lua value types
-#[deriving(Clone,Copy,PartialEq,Eq,Show)]
+#[derive(Clone,Copy,PartialEq,Eq,Show)]
 pub enum Type {
     /// Type for nil
     Nil = raw::LUA_TNIL as int,
@@ -110,7 +110,7 @@ impl Type {
 
 /// Garbage collection options (used with State.gc())
 //#[allow(dead_code)] // FIXME(rust-lang/rust#17632): dead_code warning is wrong here
-#[deriving(Copy)]
+#[derive(Copy)]
 pub enum GC {
     /// Stops the garbage collector
     Stop = raw::LUA_GCSTOP as int,
@@ -149,7 +149,7 @@ pub type Writer = raw::lua_Writer;
 pub type Alloc = raw::lua_Alloc;
 
 /// State.load() errors
-#[deriving(Copy)]
+#[derive(Copy)]
 pub enum LoadError {
     /// Syntax error during pre-compilation
     ErrSyntax = raw::LUA_ERRSYNTAX as int,
@@ -167,7 +167,7 @@ impl fmt::Show for LoadError {
 }
 
 /// State.loadfile() errors
-#[deriving(Copy)]
+#[derive(Copy)]
 pub enum LoadFileError {
     /// Syntax error during pre-compilation
     ErrSyntax = raw::LUA_ERRSYNTAX as int,
@@ -188,7 +188,7 @@ impl fmt::Show for LoadFileError {
 }
 
 /// State.pcall() errors
-#[deriving(Copy)]
+#[derive(Copy)]
 pub enum PCallError {
     /// Runtime error
     ErrRun = raw::LUA_ERRRUN as int,
@@ -248,7 +248,7 @@ pub struct State {
 
 impl Drop for State {
     fn drop(&mut self) {
-        if self.L.is_not_null() {
+        if !self.L.is_null() {
             unsafe {
                 raw::lua_close(self.L);
             }
@@ -293,7 +293,7 @@ impl State {
     pub fn new_opt() -> Option<State> {
         return unsafe {
             let L = raw::lua_newstate(alloc, ptr::null_mut());
-            if L.is_not_null() {
+            if !L.is_null() {
                 raw::lua_atpanic(L, panic);
                 Some(State{ L: L, _stackspace: MINSTACK })
             } else {
@@ -2752,7 +2752,7 @@ impl<'l> ExternState<'l> {
             p: ptr::null_mut(),
             lvl: 0,
             L: self.L,
-            buffer: [0, ..aux::raw::LUAL_BUFFERSIZE as uint]
+            buffer: [0; aux::raw::LUAL_BUFFERSIZE as uint]
         };
         unsafe { aux::raw::luaL_buffinit(self.L, &mut B); }
         Buffer{ B: B, L: self }
@@ -3021,7 +3021,7 @@ impl<'a> Buffer<'a> {
     /// Adds the char `c` as utf-8 bytes to the buffer.
     pub unsafe fn addchar(&mut self, c: char) {
         #![inline]
-        let mut buf = [0u8, ..4];
+        let mut buf = [0u8; 4];
         let count = c.encode_utf8(&mut buf).unwrap();
         self.addbytes(buf.slice_to(count));
     }
@@ -3037,15 +3037,15 @@ impl<'a> Buffer<'a> {
     /// string to be added to the buffer. After copying the string into this
     /// space you must call addsize() with the size of the string to actually
     /// add it to the buffer.
-    pub unsafe fn prepbuffer(&mut self) -> &mut [u8, ..aux::raw::LUAL_BUFFERSIZE as uint] {
+    pub unsafe fn prepbuffer(&mut self) -> &mut [u8; aux::raw::LUAL_BUFFERSIZE as uint] {
         #![inline]
         self.L.checkstack_(1);
         // luaL_prepbuffer ends up returning the buffer field.
         // Rather than unsafely trying to transmute that to the array, just return the field
         // ourselves.
         aux::raw::luaL_prepbuffer(&mut self.B);
-        mem::transmute::<&mut [i8, ..aux::raw::LUAL_BUFFERSIZE as uint],
-                          &mut [u8, ..aux::raw::LUAL_BUFFERSIZE as uint]>(&mut self.B.buffer)
+        mem::transmute::<&mut [i8; aux::raw::LUAL_BUFFERSIZE as uint],
+                          &mut [u8; aux::raw::LUAL_BUFFERSIZE as uint]>(&mut self.B.buffer)
     }
 
     /// Adds the string to the buffer.
@@ -3087,7 +3087,7 @@ impl<'a> Buffer<'a> {
 
 /* Debug API */
 /// Event codes
-#[deriving(Copy)]
+#[derive(Copy)]
 pub enum DebugEvent {
     /// The call hook is called when the interpreter calls a function. The hook is called
     /// just after Lua enters the new function, before the function gets its arguments.

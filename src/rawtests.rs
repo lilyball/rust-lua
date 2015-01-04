@@ -1,5 +1,6 @@
 use libc;
 use std::ptr;
+use std::c_str::ToCStr;
 use raw;
 use aux;
 
