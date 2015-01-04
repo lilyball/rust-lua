@@ -31,7 +31,7 @@ $(OUT_DIR)/config.rs: $(OUT_DIR)/gen-config
 	echo "pub mod config {" > $@
 	"$(OUT_DIR)"/gen-config >> $@
 	echo "}" >> $@
-	@echo "cargo:rustc-flags=-l $(LUA_LIBNAME)"
+	@echo "cargo:rustc-flags=-l $(LUA_LIBNAME) -L native=$(LUA_LIBDIRS)"
 
 $(OUT_DIR)/gen-config: src/config.c
 	$(CC) -o $@ $(CFLAGS) $<
