@@ -5,7 +5,6 @@ use raw;
 
 use libc;
 use std::thread::Thread;
-use std::any::AnyRefExt;
 
 #[test]
 fn test_state_init() {
