@@ -133,7 +133,9 @@ pub mod raw {
     }
 
     #[inline(always)]
-    pub unsafe fn luaL_opt<T>(L: *mut lua_State, f: |*mut lua_State, c_int| -> T, n: c_int, d: T) -> T {
+    pub unsafe fn luaL_opt<T, F>(L: *mut lua_State, f: F, n: c_int, d: T) -> T
+        where F: FnOnce(*mut lua_State, c_int) -> T
+    {
         if raw::lua_isnoneornil(L, n) {
             d
         } else {

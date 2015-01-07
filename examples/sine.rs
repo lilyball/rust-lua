@@ -1,14 +1,12 @@
-#![feature(phase)]
-
 #![allow(non_snake_case)]
 
-#[phase(plugin,link)]
+#[macro_use]
 extern crate lua;
 extern crate libc;
 
 use std::io;
 use std::io::BufferedReader;
-use std::num::FloatMath;
+use std::num::Float;
 
 pub fn repl(L: &mut lua::State) {
     let mut stdin = BufferedReader::new(io::stdin());

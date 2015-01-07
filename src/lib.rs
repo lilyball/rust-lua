@@ -4,8 +4,6 @@
 
 #![crate_type = "rlib"]
 
-#![feature(macro_rules)]
-
 #![warn(missing_docs)]
 #![allow(non_snake_case)]
 
@@ -13,7 +11,7 @@ extern crate libc;
 
 use libc::c_int;
 use std::{fmt, mem, path, ptr, str, slice};
-use std::c_str::{CString, ToCStr};
+use std::ffi::{self, CString};
 use std::num::SignedInt;
 
 /// Human-readable major version string
@@ -55,7 +53,8 @@ pub mod aux;
 #[allow(missing_docs)]
 pub mod lib;
 
-mod macro;
+#[path="macro.rs"]
+mod macros;
 
 #[cfg(test)]
 mod tests;
@@ -103,7 +102,7 @@ impl Type {
         unsafe {
             // NB: lua_typename() doesn't actually use its state parameter
             let s = raw::lua_typename(ptr::null_mut(), *self as libc::c_int);
-            str::from_c_str(s)
+            mem::transmute::<&str,&'static str>(str::from_utf8(ffi::c_str_to_bytes(&s)).unwrap())
         }
     }
 }
@@ -1727,7 +1726,7 @@ impl<'l> RawState<'l> {
     pub unsafe fn typename(&mut self, idx: i32) -> &'static str {
         #![inline]
         let s = aux::raw::luaL_typename(self.L, idx as c_int);
-        str::from_c_str(s)
+        mem::transmute::<&str, &'static str>(str::from_utf8(ffi::c_str_to_bytes(&s)).unwrap())
     }
 
     pub unsafe fn equal(&mut self, index1: i32, index2: i32) -> bool {
@@ -1864,7 +1863,7 @@ impl<'l> RawState<'l> {
 
     pub unsafe fn getfield(&mut self, idx: i32, k: &str) {
         #![inline]
-        k.with_c_str(|s| raw::lua_getfield(self.L, idx as c_int, s))
+        raw::lua_getfield(self.L, idx as c_int, CString::from_slice(k.as_bytes()).as_ptr())
     }
 
     pub unsafe fn rawget(&mut self, idx: i32) {
@@ -1904,7 +1903,7 @@ impl<'l> RawState<'l> {
 
     pub unsafe fn setfield(&mut self, idx: i32, k: &str) {
         #![inline]
-        k.with_c_str(|kp| raw::lua_setfield(self.L, idx as c_int, kp))
+        raw::lua_setfield(self.L, idx as c_int, CString::from_slice(k.as_bytes()).as_ptr())
     }
 
     pub unsafe fn rawset(&mut self, idx: i32) {
@@ -1945,7 +1944,8 @@ impl<'l> RawState<'l> {
 
     pub unsafe fn load(&mut self, reader: Reader, data: *mut libc::c_void, chunkname: &str)
                       -> Result<(),LoadError> {
-        match chunkname.with_c_str(|name| raw::lua_load(self.L, reader, data, name)) {
+        let cstr = CString::from_slice(chunkname.as_bytes());
+        match raw::lua_load(self.L, reader, data, cstr.as_ptr()) {
             0 => Ok(()),
             raw::LUA_ERRSYNTAX => Err(LoadError::ErrSyntax),
             raw::LUA_ERRMEM => Err(LoadError::ErrMem),
@@ -2031,7 +2031,7 @@ impl<'l> RawState<'l> {
 
     pub unsafe fn register(&mut self, name: &str, f: CFunction) {
         #![inline]
-        name.with_c_str(|s| raw::lua_register(self.L, s, f) )
+        raw::lua_register(self.L, CString::from_slice(name.as_bytes()).as_ptr(), f)
     }
 
     pub unsafe fn pushcfunction(&mut self, f: CFunction) {
@@ -2081,12 +2081,12 @@ impl<'l> RawState<'l> {
 
     pub unsafe fn setglobal(&mut self, name: &str) {
         #![inline]
-        name.with_c_str(|s| raw::lua_setglobal(self.L, s))
+        raw::lua_setglobal(self.L, CString::from_slice(name.as_bytes()).as_ptr())
     }
 
     pub unsafe fn getglobal(&mut self, name: &str) {
         #![inline]
-        name.with_c_str(|s| raw::lua_getglobal(self.L, s))
+        raw::lua_getglobal(self.L, CString::from_slice(name.as_bytes()).as_ptr())
     }
 }
 
@@ -2766,37 +2766,39 @@ impl<'l> RawState<'l> {
         let mut cstrs = Vec::with_capacity(l.len());
         let mut l_ = Vec::with_capacity(l.len()+1);
         for &(name, func) in l.iter() {
-            let cstr = name.to_c_str();
+            let cstr = CString::from_slice(name.as_bytes());
             l_.push(aux::raw::luaL_Reg{ name: cstr.as_ptr(), func: Some(func) });
             cstrs.push(cstr);
         }
         l_.push(aux::raw::luaL_Reg{ name: ptr::null(), func: None });
-        let libcstr = libname.map(|s| s.to_c_str());
+        let libcstr = libname.map(|s| CString::from_slice(s.as_bytes()));
         let libname_ = libcstr.map_or(ptr::null(), |cstr| cstr.as_ptr());
         aux::raw::luaL_register(self.L, libname_, l_.as_ptr())
     }
 
     pub unsafe fn getmetafield(&mut self, obj: i32, e: &str) -> bool {
         #![inline]
-        e.with_c_str(|e| aux::raw::luaL_getmetafield(self.L, obj as c_int, e)) != 0
+        let cstr = CString::from_slice(e.as_bytes());
+        aux::raw::luaL_getmetafield(self.L, obj as c_int, cstr.as_ptr()) != 0
     }
 
     pub unsafe fn callmeta(&mut self, obj: i32, e: &str) -> bool {
         #![inline]
-        e.with_c_str(|e| aux::raw::luaL_callmeta(self.L, obj as c_int, e)) != 0
+        let cstr = CString::from_slice(e.as_bytes());
+        aux::raw::luaL_callmeta(self.L, obj as c_int, cstr.as_ptr()) != 0
     }
 
     pub unsafe fn typerror(&mut self, narg: i32, tname: &str) -> ! {
         #![inline]
-        tname.with_c_str(|tname| aux::raw::luaL_typerror(self.L, narg as c_int, tname));
+        let cstr = CString::from_slice(tname.as_bytes());
+        aux::raw::luaL_typerror(self.L, narg as c_int, cstr.as_ptr());
         unreachable!()
     }
 
     pub unsafe fn argerror(&mut self, narg: i32, extramsg: &str) -> ! {
         #![inline]
-        extramsg.with_c_str(|msg| {
-            aux::raw::luaL_argerror(self.L, narg as c_int, msg);
-        });
+        let cstr = CString::from_slice(extramsg.as_bytes());
+        aux::raw::luaL_argerror(self.L, narg as c_int, cstr.as_ptr());
         unreachable!()
     }
 
@@ -2831,7 +2833,8 @@ impl<'l> RawState<'l> {
     pub unsafe fn optbytes(&mut self, narg: i32, d: &'static [u8]) -> &'static [u8] {
         #![inline]
         let mut sz: libc::size_t = 0;
-        let s = d.with_c_str(|d| aux::raw::luaL_optlstring(self.L, narg, d, &mut sz));
+        let cstr = CString::from_slice(d);
+        let s = aux::raw::luaL_optlstring(self.L, narg, cstr.as_ptr(), &mut sz);
         let buf = s as *const u8;
         mem::transmute::<&[u8], &'static [u8]>(slice::from_raw_buf(&buf, sz as uint))
     }
@@ -2868,12 +2871,14 @@ impl<'l> RawState<'l> {
 
     pub unsafe fn newmetatable(&mut self, tname: &str) -> bool {
         #![inline]
-        tname.with_c_str(|tname| aux::raw::luaL_newmetatable(self.L, tname)) != 0
+        let cstr = CString::from_slice(tname.as_bytes());
+        aux::raw::luaL_newmetatable(self.L, cstr.as_ptr()) != 0
     }
 
     pub unsafe fn checkudata(&mut self, narg: i32, tname: &str) -> *mut libc::c_void {
         #![inline]
-        tname.with_c_str(|tname| aux::raw::luaL_checkudata(self.L, narg as c_int, tname))
+        let cstr = CString::from_slice(tname.as_bytes());
+        aux::raw::luaL_checkudata(self.L, narg as c_int, cstr.as_ptr())
     }
 
     pub unsafe fn where_(&mut self, lvl: i32) {
@@ -2892,12 +2897,12 @@ impl<'l> RawState<'l> {
 
     pub unsafe fn checkoption<'a, T>(&mut self, narg: i32, def: Option<&str>, lst: &'a [(&str,T)])
                                     -> &'a T {
-        let def_cstr = def.map(|d| d.to_c_str());
+        let def_cstr = def.map(|d| CString::from_slice(d.as_bytes()));
         let defp = def_cstr.as_ref().map_or(ptr::null(), |c| c.as_ptr());
         let mut lst_cstrs = Vec::with_capacity(lst.len());
         let mut lstv = Vec::with_capacity(lst.len()+1);
         for &(k,_) in lst.iter() {
-            let cstr = k.to_c_str();
+            let cstr = CString::from_slice(k.as_bytes());
             lstv.push(cstr.as_ptr());
             lst_cstrs.push(cstr);
         }
@@ -2918,7 +2923,7 @@ impl<'l> RawState<'l> {
 
     pub unsafe fn loadfile(&mut self, filename: Option<&path::Path>) -> Result<(),LoadFileError> {
         #![inline]
-        let cstr = filename.map(|p| p.to_c_str());
+        let cstr = filename.map(|p| CString::from_slice(p.as_vec()));
         let ptr = cstr.as_ref().map_or(ptr::null(), |cstr| cstr.as_ptr());
         match aux::raw::luaL_loadfile(self.L, ptr) {
             0 => Ok(()),
@@ -2933,7 +2938,8 @@ impl<'l> RawState<'l> {
         #![inline]
         let bp = buf.as_ptr() as *const libc::c_char;
         let bsz = buf.len() as libc::size_t;
-        match name.with_c_str(|name| aux::raw::luaL_loadbuffer(self.L, bp, bsz, name)) {
+        let cstr = CString::from_slice(name.as_bytes());
+        match aux::raw::luaL_loadbuffer(self.L, bp, bsz, cstr.as_ptr()) {
             0 => Ok(()),
             raw::LUA_ERRSYNTAX => Err(LoadError::ErrSyntax),
             raw::LUA_ERRMEM => Err(LoadError::ErrMem),
@@ -2943,7 +2949,8 @@ impl<'l> RawState<'l> {
 
     pub unsafe fn loadstring(&mut self, s: &str) -> Result<(),LoadError> {
         #![inline]
-        match s.with_c_str(|s| aux::raw::luaL_loadstring(self.L, s)) {
+        let cstr = CString::from_slice(s.as_bytes());
+        match aux::raw::luaL_loadstring(self.L, cstr.as_ptr()) {
             0 => Ok(()),
             raw::LUA_ERRSYNTAX => Err(LoadError::ErrSyntax),
             raw::LUA_ERRMEM => Err(LoadError::ErrMem),
@@ -2955,31 +2962,32 @@ impl<'l> RawState<'l> {
     /// RawState, but its lifetime is actually that of the value on the stack.
     pub unsafe fn gsub(&mut self, s: &str, p: &str, r: &str) -> &'static str {
         #![inline]
-        let (s_, p_, r_) = (s.to_c_str(), p.to_c_str(), r.to_c_str());
+        let (s_, p_, r_) = (CString::from_slice(s.as_bytes()),
+                            CString::from_slice(p.as_bytes()),
+                            CString::from_slice(r.as_bytes()));
         let (sp, pp, rp) = (s_.as_ptr(), p_.as_ptr(), r_.as_ptr());
         let res = aux::raw::luaL_gsub(self.L, sp, pp, rp);
-        let cstr = CString::new(res, false);
-        let res = cstr.as_str().unwrap();
+        let cstr = ffi::c_str_to_bytes(&res);
+        let res = str::from_utf8(cstr).unwrap();
         mem::transmute::<&str,&'static str>(res)
     }
 
     pub unsafe fn argcheck(&mut self, cond: bool, narg: i32, extramsg: &str) {
         #![inline]
-        extramsg.with_c_str(|msg| {
-            aux::raw::luaL_argcheck(self.L, cond, narg as c_int, msg)
-        })
+        let cstr = CString::from_slice(extramsg.as_bytes());
+        aux::raw::luaL_argcheck(self.L, cond, narg as c_int, cstr.as_ptr())
     }
 
     pub unsafe fn dofile(&mut self, filename: Option<&path::Path>) -> bool {
         #![inline]
-        let cstr = filename.map(|p| p.to_c_str());
+        let cstr = filename.map(|p| CString::from_slice(p.as_vec()));
         let name = cstr.map_or(ptr::null(), |c| c.as_ptr());
         aux::raw::luaL_dofile(self.L, name) == 0
     }
 
     pub unsafe fn dostring(&mut self, s: &str) -> bool {
         #![inline]
-        s.with_c_str(|s| aux::raw::luaL_dostring(self.L, s)) == 0
+        aux::raw::luaL_dostring(self.L, CString::from_slice(s.as_bytes()).as_ptr()) == 0
     }
 
     pub unsafe fn getmetatable_reg(&mut self, tname: &str) {
@@ -3372,7 +3380,7 @@ impl<'l> RawState<'l> {
 
     pub unsafe fn getinfo(&mut self, what: &str, ar: &mut Debug) -> bool {
         #![inline]
-        what.with_c_str(|w| raw::lua_getinfo(self.L, w, ar)) != 0
+        raw::lua_getinfo(self.L, CString::from_slice(what.as_bytes()).as_ptr(), ar) != 0
     }
 
     pub unsafe fn getlocal<'a>(&mut self, ar: &'a Debug, n: i32) -> Option<&'a [u8]> {
@@ -3425,8 +3433,7 @@ unsafe fn c_str_to_bytes<'a>(cstr: *const libc::c_char) -> Option<&'a [u8]> {
     if cstr.is_null() {
         None
     } else {
-        let cstr = CString::new(cstr, false);
-        let bytes = cstr.as_bytes();
+        let bytes = ffi::c_str_to_bytes(&cstr);
         Some(mem::transmute::<&[u8],&'a [u8]>(bytes))
     }
 }
