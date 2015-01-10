@@ -1,4 +1,4 @@
-#![allow(non_snake_case)]
+#![allow(non_snake_case,unstable)]
 
 #[macro_use]
 extern crate lua;
@@ -25,7 +25,7 @@ pub fn repl(L: &mut lua::State) {
         }
         match L.loadbuffer(line.as_slice(), "=stdin") {
             Ok(_) => (),
-            Err(err) => { let _ = writeln!(stderr, "{}", err); continue; }
+            Err(err) => { let _ = writeln!(stderr, "{:?}", err); continue; }
         }
         match L.pcall(0, lua::MULTRET, 0) {
             Ok(_) => (),

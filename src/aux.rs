@@ -151,13 +151,13 @@ pub mod raw {
         pub p: *mut libc::c_char, // current position in buffer
         pub lvl: c_int, // number of strings in the stack (level)
         pub L: *mut lua_State,
-        pub buffer: [libc::c_char; LUAL_BUFFERSIZE as uint]
+        pub buffer: [libc::c_char; LUAL_BUFFERSIZE as usize]
     }
 
     #[inline(always)]
     pub unsafe fn luaL_addchar(B: *mut luaL_Buffer, c: libc::c_char) {
         let startp: *mut libc::c_char = &mut (*B).buffer[0];
-        if (*B).p >= startp.offset(LUAL_BUFFERSIZE as int) {
+        if (*B).p >= startp.offset(LUAL_BUFFERSIZE as isize) {
             luaL_prepbuffer(B);
         }
         *(*B).p = c;
@@ -168,7 +168,7 @@ pub mod raw {
 
     #[inline(always)]
     pub unsafe fn luaL_addsize(B: *mut luaL_Buffer, n: libc::size_t) {
-        (*B).p = (*B).p.offset(n as int);
+        (*B).p = (*B).p.offset(n as isize);
     }
 
     extern {

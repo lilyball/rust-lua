@@ -5,7 +5,7 @@
 #![crate_type = "rlib"]
 
 #![warn(missing_docs)]
-#![allow(non_snake_case)]
+#![allow(non_snake_case,unstable)]
 
 extern crate libc;
 
@@ -19,7 +19,7 @@ pub const VERSION: &'static str = config::LUA_VERSION;
 /// Human-readable release version string
 pub const RELEASE: &'static str = config::LUA_RELEASE;
 /// Machine-readable version number
-pub const VERSION_NUM: int = config::LUA_VERSION_NUM as int;
+pub const VERSION_NUM: isize = config::LUA_VERSION_NUM as isize;
 
 /// Value for lua_call that means return all results
 pub const MULTRET: i32 = raw::MULTRET as i32;
@@ -77,23 +77,23 @@ macro_rules! luaassert{
 #[derive(Clone,Copy,PartialEq,Eq,Show)]
 pub enum Type {
     /// Type for nil
-    Nil = raw::LUA_TNIL as int,
+    Nil = raw::LUA_TNIL as isize,
     /// Type for booleans
-    Boolean = raw::LUA_TBOOLEAN as int,
+    Boolean = raw::LUA_TBOOLEAN as isize,
     /// Type for light userdata
-    LightUserdata = raw::LUA_TLIGHTUSERDATA as int,
+    LightUserdata = raw::LUA_TLIGHTUSERDATA as isize,
     /// Type for numbers
-    Number = raw::LUA_TNUMBER as int,
+    Number = raw::LUA_TNUMBER as isize,
     /// Type for strings
-    String = raw::LUA_TSTRING as int,
+    String = raw::LUA_TSTRING as isize,
     /// Type for tables
-    Table = raw::LUA_TTABLE as int,
+    Table = raw::LUA_TTABLE as isize,
     /// Type for functions
-    Function = raw::LUA_TFUNCTION as int,
+    Function = raw::LUA_TFUNCTION as isize,
     /// Type for userdata
-    Userdata = raw::LUA_TUSERDATA as int,
+    Userdata = raw::LUA_TUSERDATA as isize,
     /// Type for threads
-    Thread = raw::LUA_TTHREAD as int
+    Thread = raw::LUA_TTHREAD as isize
 }
 
 impl Type {
@@ -112,27 +112,27 @@ impl Type {
 #[derive(Copy)]
 pub enum GC {
     /// Stops the garbage collector
-    Stop = raw::LUA_GCSTOP as int,
+    Stop = raw::LUA_GCSTOP as isize,
     /// Restarts the garbage collector
-    Restart = raw::LUA_GCRESTART as int,
+    Restart = raw::LUA_GCRESTART as isize,
     /// Performs a full garbage-collection cycle
-    Collect = raw::LUA_GCCOLLECT as int,
+    Collect = raw::LUA_GCCOLLECT as isize,
     /// Returns the current amount of memory (in Kbytes) in use by Lua
-    Count = raw::LUA_GCCOUNT as int,
+    Count = raw::LUA_GCCOUNT as isize,
     /// Returns the remainder of dividing the current amount of bytes in memory in use by Lua
     /// by 1024
-    CountB = raw::LUA_GCCOUNTB as int,
+    CountB = raw::LUA_GCCOUNTB as isize,
     /// Performs an incremental step of garbage collection. The step "size" is controlled by
     /// `data` (larger values mean more steps) in a non-specified way. If you want to control
     /// the step size you must experimentally tune hte value of `data`. The function returns
     /// 1 if the step finished a garbage-collection cycle.
-    Step = raw::LUA_GCSTEP as int,
+    Step = raw::LUA_GCSTEP as isize,
     /// Sets `data` as the new value for the pause of the collector. The function returns the
     /// previous value of the pause.
-    SetPause = raw::LUA_GCSETPAUSE as int,
+    SetPause = raw::LUA_GCSETPAUSE as isize,
     /// Sets `data` as the new value for the step multiplier of the collector. The function
     /// returns the previous value of the step multiplier.
-    SetStepMul = raw::LUA_GCSETSTEPMUL as int
+    SetStepMul = raw::LUA_GCSETSTEPMUL as isize
 }
 
 /// Type that represents C functions that can be registered with Lua.
@@ -151,9 +151,9 @@ pub type Alloc = raw::lua_Alloc;
 #[derive(Copy)]
 pub enum LoadError {
     /// Syntax error during pre-compilation
-    ErrSyntax = raw::LUA_ERRSYNTAX as int,
+    ErrSyntax = raw::LUA_ERRSYNTAX as isize,
     /// Memory allocation error
-    ErrMem = raw::LUA_ERRMEM as int
+    ErrMem = raw::LUA_ERRMEM as isize
 }
 
 impl fmt::Show for LoadError {
@@ -169,11 +169,11 @@ impl fmt::Show for LoadError {
 #[derive(Copy)]
 pub enum LoadFileError {
     /// Syntax error during pre-compilation
-    ErrSyntax = raw::LUA_ERRSYNTAX as int,
+    ErrSyntax = raw::LUA_ERRSYNTAX as isize,
     /// Memory allocation error
-    ErrMem = raw::LUA_ERRMEM as int,
+    ErrMem = raw::LUA_ERRMEM as isize,
     /// Cannot read/open the file
-    ErrFile = aux::raw::LUA_ERRFILE as int
+    ErrFile = aux::raw::LUA_ERRFILE as isize
 }
 
 impl fmt::Show for LoadFileError {
@@ -190,11 +190,11 @@ impl fmt::Show for LoadFileError {
 #[derive(Copy)]
 pub enum PCallError {
     /// Runtime error
-    ErrRun = raw::LUA_ERRRUN as int,
+    ErrRun = raw::LUA_ERRRUN as isize,
     /// Memory allocation error
-    ErrMem = raw::LUA_ERRMEM as int,
+    ErrMem = raw::LUA_ERRMEM as isize,
     /// Error while running the error handler function
-    ErrErr = raw::LUA_ERRERR as int
+    ErrErr = raw::LUA_ERRERR as isize
 }
 
 impl PCallError {
@@ -573,10 +573,10 @@ impl State {
         unsafe { self.as_extern().tonumber(idx) }
     }
 
-    /// Converts the Lua value at the given acceptable index to an int. The Lua
+    /// Converts the Lua value at the given acceptable index to an isize. The Lua
     /// value must be a number or a string convertiable to a number; otherwise,
     /// toint returns 0.
-    pub fn tointeger(&mut self, idx: i32) -> int {
+    pub fn tointeger(&mut self, idx: i32) -> isize {
         #![inline(always)]
         unsafe { self.as_extern().tointeger(idx) }
     }
@@ -611,7 +611,7 @@ impl State {
     }
 
     /// Returns the "length" of the value at the given acceptable index.
-    pub fn objlen(&mut self, idx: i32) -> uint {
+    pub fn objlen(&mut self, idx: i32) -> usize {
         #![inline(always)]
         unsafe { self.as_extern().objlen(idx) }
     }
@@ -663,7 +663,7 @@ impl State {
     }
 
     /// Pushes a number with value `n` onto the stack.
-    pub fn pushinteger(&mut self, n: int) {
+    pub fn pushinteger(&mut self, n: isize) {
         #![inline(always)]
         unsafe { self.as_extern().pushinteger(n) }
     }
@@ -756,7 +756,7 @@ impl State {
     /// This method allocates a new block of memory with the given size, pushes
     /// onto the stack a new full userdata with the block address, and returns
     /// this address.
-    pub fn newuserdata(&mut self, size: uint) -> *mut libc::c_void {
+    pub fn newuserdata(&mut self, size: usize) -> *mut libc::c_void {
         #![inline(always)]
         unsafe { self.as_extern().newuserdata(size) }
     }
@@ -1253,7 +1253,7 @@ impl<'l> ExternState<'l> {
         self.as_raw().tonumber(idx)
     }
 
-    pub unsafe fn tointeger(&mut self, idx: i32) -> int {
+    pub unsafe fn tointeger(&mut self, idx: i32) -> isize {
         self.check_acceptable(idx);
         self.as_raw().tointeger(idx)
     }
@@ -1279,7 +1279,7 @@ impl<'l> ExternState<'l> {
         self.as_raw().tobytes(idx)
     }
 
-    pub unsafe fn objlen(&mut self, idx: i32) -> uint {
+    pub unsafe fn objlen(&mut self, idx: i32) -> usize {
         self.check_acceptable(idx);
         self.as_raw().objlen(idx)
     }
@@ -1314,7 +1314,7 @@ impl<'l> ExternState<'l> {
         self.as_raw().pushnumber(n)
     }
 
-    pub unsafe fn pushinteger(&mut self, n: int) {
+    pub unsafe fn pushinteger(&mut self, n: isize) {
         self.checkstack_(1);
         self.as_raw().pushinteger(n)
     }
@@ -1382,7 +1382,7 @@ impl<'l> ExternState<'l> {
         self.as_raw().createtable(narr, nrec)
     }
 
-    pub unsafe fn newuserdata(&mut self, size: uint) -> *mut libc::c_void {
+    pub unsafe fn newuserdata(&mut self, size: usize) -> *mut libc::c_void {
         self.checkstack_(1);
         self.as_raw().newuserdata(size)
     }
@@ -1749,9 +1749,9 @@ impl<'l> RawState<'l> {
         raw::lua_tonumber(self.L, idx as c_int) as f64
     }
 
-    pub unsafe fn tointeger(&mut self, idx: i32) -> int {
+    pub unsafe fn tointeger(&mut self, idx: i32) -> isize {
         #![inline]
-        raw::lua_tointeger(self.L, idx as c_int) as int
+        raw::lua_tointeger(self.L, idx as c_int) as isize
     }
 
     pub unsafe fn toboolean(&mut self, idx: i32) -> bool {
@@ -1777,13 +1777,13 @@ impl<'l> RawState<'l> {
             None
         } else {
             let buf = s as *const u8;
-            Some(mem::transmute::<&[u8], &'static [u8]>(slice::from_raw_buf(&buf, sz as uint)))
+            Some(mem::transmute::<&[u8], &'static [u8]>(slice::from_raw_buf(&buf, sz as usize)))
         }
     }
 
-    pub unsafe fn objlen(&mut self, idx: i32) -> uint {
+    pub unsafe fn objlen(&mut self, idx: i32) -> usize {
         #![inline]
-        raw::lua_objlen(self.L, idx as c_int) as uint
+        raw::lua_objlen(self.L, idx as c_int) as usize
     }
 
     pub unsafe fn tocfunction(&mut self, idx: i32) -> Option<CFunction> {
@@ -1821,7 +1821,7 @@ impl<'l> RawState<'l> {
         raw::lua_pushnumber(self.L, n as raw::lua_Number)
     }
 
-    pub unsafe fn pushinteger(&mut self, n: int) {
+    pub unsafe fn pushinteger(&mut self, n: isize) {
         #![inline]
         raw::lua_pushinteger(self.L, n as raw::lua_Integer)
     }
@@ -1881,7 +1881,7 @@ impl<'l> RawState<'l> {
         raw::lua_createtable(self.L, narr as c_int, nrec as c_int)
     }
 
-    pub unsafe fn newuserdata(&mut self, size: uint) -> *mut libc::c_void {
+    pub unsafe fn newuserdata(&mut self, size: usize) -> *mut libc::c_void {
         #![inline]
         raw::lua_newuserdata(self.L, size as libc::size_t)
     }
@@ -2396,16 +2396,16 @@ impl State {
     }
 
     /// Checks whether the function argument `narg` is a number and returns it
-    /// as an int.
-    pub fn checkinteger(&mut self, narg: i32) -> int {
+    /// as an isize.
+    pub fn checkinteger(&mut self, narg: i32) -> isize {
         #![inline(always)]
         unsafe { self.as_extern().checkinteger(narg) }
     }
 
     /// If the function argument `narg` is a number, returns this number cast
-    /// to an int. If this argument is absent or nil, returns `d`. Otherwise,
+    /// to an isize. If this argument is absent or nil, returns `d`. Otherwise,
     /// raises an error.
-    pub fn optinteger(&mut self, narg: i32, d: int) -> int {
+    pub fn optinteger(&mut self, narg: i32, d: isize) -> isize {
         #![inline(always)]
         unsafe { self.as_extern().optinteger(narg, d) }
     }
@@ -2645,12 +2645,12 @@ impl<'l> ExternState<'l> {
         self.as_raw().optnumber(narg, d)
     }
 
-    pub unsafe fn checkinteger(&mut self, narg: i32) -> int {
+    pub unsafe fn checkinteger(&mut self, narg: i32) -> isize {
         self.check_acceptable(narg);
         self.as_raw().checkinteger(narg)
     }
 
-    pub unsafe fn optinteger(&mut self, narg: i32, d: int) -> int {
+    pub unsafe fn optinteger(&mut self, narg: i32, d: isize) -> isize {
         self.check_acceptable(narg);
         self.as_raw().optinteger(narg, d)
     }
@@ -2752,7 +2752,7 @@ impl<'l> ExternState<'l> {
             p: ptr::null_mut(),
             lvl: 0,
             L: self.L,
-            buffer: [0; aux::raw::LUAL_BUFFERSIZE as uint]
+            buffer: [0; aux::raw::LUAL_BUFFERSIZE as usize]
         };
         unsafe { aux::raw::luaL_buffinit(self.L, &mut B); }
         Buffer{ B: B, L: self }
@@ -2817,7 +2817,7 @@ impl<'l> RawState<'l> {
         let mut sz: libc::size_t = 0;
         let s = aux::raw::luaL_checklstring(self.L, narg, &mut sz);
         let buf = s as *const u8;
-        mem::transmute::<&[u8], &'static [u8]>(slice::from_raw_buf(&buf, sz as uint))
+        mem::transmute::<&[u8], &'static [u8]>(slice::from_raw_buf(&buf, sz as usize))
     }
 
     /// Note: the string is returned as 'static to prevent borrowing the
@@ -2836,7 +2836,7 @@ impl<'l> RawState<'l> {
         let cstr = CString::from_slice(d);
         let s = aux::raw::luaL_optlstring(self.L, narg, cstr.as_ptr(), &mut sz);
         let buf = s as *const u8;
-        mem::transmute::<&[u8], &'static [u8]>(slice::from_raw_buf(&buf, sz as uint))
+        mem::transmute::<&[u8], &'static [u8]>(slice::from_raw_buf(&buf, sz as usize))
     }
 
     pub unsafe fn checknumber(&mut self, narg: i32) -> f64 {
@@ -2849,14 +2849,14 @@ impl<'l> RawState<'l> {
         aux::raw::luaL_optnumber(self.L, narg as c_int, d as raw::lua_Number) as f64
     }
 
-    pub unsafe fn checkinteger(&mut self, narg: i32) -> int {
+    pub unsafe fn checkinteger(&mut self, narg: i32) -> isize {
         #![inline]
-        aux::raw::luaL_checkinteger(self.L, narg as c_int) as int
+        aux::raw::luaL_checkinteger(self.L, narg as c_int) as isize
     }
 
-    pub unsafe fn optinteger(&mut self, narg: i32, d: int) -> int {
+    pub unsafe fn optinteger(&mut self, narg: i32, d: isize) -> isize {
         #![inline]
-        aux::raw::luaL_optinteger(self.L, narg as c_int, d as raw::lua_Integer) as int
+        aux::raw::luaL_optinteger(self.L, narg as c_int, d as raw::lua_Integer) as isize
     }
 
     pub unsafe fn checktype(&mut self, narg: i32, t: Type) {
@@ -2907,7 +2907,7 @@ impl<'l> RawState<'l> {
             lst_cstrs.push(cstr);
         }
         lstv.push(ptr::null());
-        let i = aux::raw::luaL_checkoption(self.L, narg as c_int, defp, lstv.as_ptr()) as uint;
+        let i = aux::raw::luaL_checkoption(self.L, narg as c_int, defp, lstv.as_ptr()) as usize;
         &lst[i].1
     }
 
@@ -3009,7 +3009,7 @@ pub struct Buffer<'a> {
 }
 
 /// Size of the internal buffer used by Buffer and returned by prepbuffer()
-pub const BUFFERSIZE: uint = aux::raw::LUAL_BUFFERSIZE as uint;
+pub const BUFFERSIZE: usize = aux::raw::LUAL_BUFFERSIZE as usize;
 
 impl<'a> Buffer<'a> {
     /// Adds the byte `c` to the buffer.
@@ -3018,7 +3018,7 @@ impl<'a> Buffer<'a> {
         // don't call through to luaL_addchar, because we want to insert a call to checkstack()
         // iff we have to prep the buffer.
         let startp: *mut libc::c_char = &mut self.B.buffer[0];
-        if self.B.p >= startp.offset(aux::raw::LUAL_BUFFERSIZE as int) {
+        if self.B.p >= startp.offset(aux::raw::LUAL_BUFFERSIZE as isize) {
             self.L.checkstack_(1);
             aux::raw::luaL_prepbuffer(&mut self.B);
         }
@@ -3036,7 +3036,7 @@ impl<'a> Buffer<'a> {
 
     /// Adds to the buffer a string of length `n` previously copied to the
     /// buffer area (see prepbuffer()).
-    pub unsafe fn addsize(&mut self, n: uint) {
+    pub unsafe fn addsize(&mut self, n: usize) {
         #![inline]
         aux::raw::luaL_addsize(&mut self.B, n as libc::size_t)
     }
@@ -3045,15 +3045,15 @@ impl<'a> Buffer<'a> {
     /// string to be added to the buffer. After copying the string into this
     /// space you must call addsize() with the size of the string to actually
     /// add it to the buffer.
-    pub unsafe fn prepbuffer(&mut self) -> &mut [u8; aux::raw::LUAL_BUFFERSIZE as uint] {
+    pub unsafe fn prepbuffer(&mut self) -> &mut [u8; aux::raw::LUAL_BUFFERSIZE as usize] {
         #![inline]
         self.L.checkstack_(1);
         // luaL_prepbuffer ends up returning the buffer field.
         // Rather than unsafely trying to transmute that to the array, just return the field
         // ourselves.
         aux::raw::luaL_prepbuffer(&mut self.B);
-        mem::transmute::<&mut [i8; aux::raw::LUAL_BUFFERSIZE as uint],
-                          &mut [u8; aux::raw::LUAL_BUFFERSIZE as uint]>(&mut self.B.buffer)
+        mem::transmute::<&mut [i8; aux::raw::LUAL_BUFFERSIZE as usize],
+                          &mut [u8; aux::raw::LUAL_BUFFERSIZE as usize]>(&mut self.B.buffer)
     }
 
     /// Adds the string to the buffer.
@@ -3099,21 +3099,21 @@ impl<'a> Buffer<'a> {
 pub enum DebugEvent {
     /// The call hook is called when the interpreter calls a function. The hook is called
     /// just after Lua enters the new function, before the function gets its arguments.
-    HookCall = raw::LUA_HOOKCALL as int,
+    HookCall = raw::LUA_HOOKCALL as isize,
     /// The return hook is called when the interpreter returns from a function. The hook is
     /// called just before Lua leaves the function. You have no access to the values to be
     /// returned by the function.
-    HookRet = raw::LUA_HOOKRET as int,
+    HookRet = raw::LUA_HOOKRET as isize,
     /// The line hook is called when the interpreter is about to start the execution of a new
     /// line of code, or when it jumps back in the code (even to the same line).
     /// (This event only happens while Lua is executing a Lua function.)
-    HookLine = raw::LUA_HOOKLINE as int,
+    HookLine = raw::LUA_HOOKLINE as isize,
     /// The count hook is called after the interpreter executes every `count` instructions.
     /// (This event only happens while Lua is executing a Lua function.)
-    HookCount = raw::LUA_HOOKCOUNT as int,
+    HookCount = raw::LUA_HOOKCOUNT as isize,
     /// The tailret event is used when a HookRet hook is called while simulating a return from
     /// a function that did a tail call; in this case, it is useless to call getinfo().
-    HookTailRet = raw::LUA_HOOKTAILRET as int
+    HookTailRet = raw::LUA_HOOKTAILRET as isize
 }
 
 impl DebugEvent {

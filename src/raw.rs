@@ -273,10 +273,10 @@ pub const LUA_HOOKCOUNT:   c_int = 3;
 pub const LUA_HOOKTAILRET: c_int = 4;
 
 // Event masks
-pub const LUA_MASKCALL: c_int = 1 << (LUA_HOOKCALL as uint);
-pub const LUA_MASKRET: c_int = 1 << (LUA_HOOKRET as uint);
-pub const LUA_MASKLINE: c_int = 1 << (LUA_HOOKLINE as uint);
-pub const LUA_MASKCOUNT: c_int = 1 << (LUA_HOOKCOUNT as uint);
+pub const LUA_MASKCALL: c_int = 1 << LUA_HOOKCALL;
+pub const LUA_MASKRET: c_int = 1 << LUA_HOOKRET;
+pub const LUA_MASKLINE: c_int = 1 << LUA_HOOKLINE;
+pub const LUA_MASKCOUNT: c_int = 1 << LUA_HOOKCOUNT;
 
 pub type lua_Hook = unsafe extern "C" fn(L: *mut lua_State, ar: *mut lua_Debug);
 
@@ -311,7 +311,7 @@ pub struct lua_Debug {
     /// The line number where the definition of the function ends.
     pub lastlinedefined: c_int, /* (S) */
     /// A "printable" version of `source`, to be used in error messages.
-    pub short_src: [libc::c_char; config::LUA_IDSIZE as uint], /* (S) */
+    pub short_src: [libc::c_char; config::LUA_IDSIZE as usize], /* (S) */
     /* private part */
     i_ci: c_int /* active function */
 }
@@ -328,7 +328,7 @@ impl default::Default for lua_Debug {
             nups: 0,
             linedefined: 0,
             lastlinedefined: 0,
-            short_src: [0; config::LUA_IDSIZE as uint],
+            short_src: [0; config::LUA_IDSIZE as usize],
             i_ci: 0
         }
     }
