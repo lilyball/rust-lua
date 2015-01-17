@@ -2,7 +2,7 @@ use libc;
 use std::ptr;
 use std::ffi::CString;
 use raw;
-use aux;
+use auxlib;
 
 // implement the same function that luaL_newstate uses, so we can test lua_newstate directly
 // FIXME (#10025): We can't define this as `unsafe extern "C"`
@@ -36,7 +36,7 @@ fn test_lua_newstate() {
 #[test]
 fn test_luaL_newstate() {
     unsafe {
-        let L = aux::raw::luaL_newstate();
+        let L = auxlib::raw::luaL_newstate();
         raw::lua_atpanic(L, panic_helper);
         raw::lua_pushinteger(L, 42);
         raw::lua_close(L);
@@ -47,7 +47,7 @@ fn test_luaL_newstate() {
 #[should_fail]
 fn test_lua_error() {
     unsafe {
-        let L = aux::raw::luaL_newstate();
+        let L = auxlib::raw::luaL_newstate();
         raw::lua_atpanic(L, panic_helper);
         raw::lua_pushinteger(L, 42);
         raw::lua_error(L);
@@ -57,10 +57,10 @@ fn test_lua_error() {
 #[test]
 fn test_dostring() {
     unsafe {
-        let L = aux::raw::luaL_newstate();
+        let L = auxlib::raw::luaL_newstate();
         raw::lua_atpanic(L, panic_helper);
         let s = "function foo(x,y) return x+y end";
-        let ret = aux::raw::luaL_dostring(L, CString::from_slice(s.as_bytes()).as_ptr());
+        let ret = auxlib::raw::luaL_dostring(L, CString::from_slice(s.as_bytes()).as_ptr());
         assert_eq!(ret, 0);
         raw::lua_getglobal(L, CString::from_slice(b"foo").as_ptr());
 

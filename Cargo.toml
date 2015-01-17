@@ -1,5 +1,5 @@
 [package]
-name = "lua"
+name = "rust-lua"
 version = "0.1.0"
 authors = [ "kevin@sb.org" ]
 description = "Lua 5.1 bindings for Rust"

@@ -26,7 +26,7 @@ else
 # the rest of the Makefile is only visible to Cargo
 
 cargo-prep: $(OUT_DIR)/config.rs
-	@echo "cargo:rustc-flags=-l $(LUA_LIBNAME) -L native=$(LUA_LIBDIRS)"
+	@echo "cargo:rustc-flags=-l $(LUA_LIBNAME) -L $(LUA_LIBDIRS)"
 
 $(OUT_DIR)/config.rs: $(OUT_DIR)/gen-config
 	echo "pub mod config {" > $@
