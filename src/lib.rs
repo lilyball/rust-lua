@@ -47,6 +47,7 @@ include!(concat!(env!("OUT_DIR"), "/config.rs"));
 #[allow(missing_docs)]
 pub mod raw;
 #[allow(missing_docs)]
+#[path="aux_.rs"]
 pub mod aux;
 
 #[path = "lualib.rs"]
