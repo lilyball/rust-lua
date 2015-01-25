@@ -25,7 +25,7 @@ fn test_errorstr() {
         let mut s = State::new();
         s.errorstr("some err");
     }).join();
-    let err = res.unwrap_err();
+    let err = res.err().unwrap();
     let expected = "unprotected error in call to Lua API (some err)";
     let s = err.downcast_ref::<String>();
     if s.is_some() {
@@ -70,7 +70,7 @@ fn test_openlibs() {
     assert_eq!(s.type_(-1), Some(Type::Table));
 }
 
-#[derive(Copy,PartialEq,Eq,Show)]
+#[derive(Copy,PartialEq,Eq,Debug)]
 enum CheckOptionEnum {
     One,
     Two,

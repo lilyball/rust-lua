@@ -75,7 +75,7 @@ macro_rules! luaassert{
 }
 
 /// Lua value types
-#[derive(Clone,Copy,PartialEq,Eq,Show)]
+#[derive(Clone,Copy,PartialEq,Eq,Debug)]
 pub enum Type {
     /// Type for nil
     Nil = raw::LUA_TNIL as isize,
@@ -157,7 +157,7 @@ pub enum LoadError {
     ErrMem = raw::LUA_ERRMEM as isize
 }
 
-impl fmt::Show for LoadError {
+impl fmt::Debug for LoadError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
             LoadError::ErrSyntax => f.pad("syntax error"),
@@ -177,7 +177,7 @@ pub enum LoadFileError {
     ErrFile = aux::raw::LUA_ERRFILE as isize
 }
 
-impl fmt::Show for LoadFileError {
+impl fmt::Debug for LoadFileError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
             LoadFileError::ErrSyntax => f.pad("syntax error"),
@@ -210,7 +210,7 @@ impl PCallError {
     }
 }
 
-impl fmt::Show for PCallError {
+impl fmt::Debug for PCallError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
             PCallError::ErrRun => f.pad("runtime error"),
@@ -3032,7 +3032,7 @@ impl<'a> Buffer<'a> {
         #![inline]
         let mut buf = [0u8; 4];
         let count = c.encode_utf8(&mut buf).unwrap();
-        self.addbytes(buf.slice_to(count));
+        self.addbytes(&buf[..count]);
     }
 
     /// Adds to the buffer a string of length `n` previously copied to the
