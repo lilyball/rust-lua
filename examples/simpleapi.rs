@@ -8,7 +8,8 @@
 
 extern crate lua;
 
-use std::{io, os};
+use std::old_io as io;
+use std::os;
 use std::iter::range_inclusive;
 
 fn main() {

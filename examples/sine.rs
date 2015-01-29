@@ -4,8 +4,8 @@
 extern crate lua;
 extern crate libc;
 
-use std::io;
-use std::io::BufferedReader;
+use std::old_io as io;
+use std::old_io::BufferedReader;
 use std::num::Float;
 
 pub fn repl(L: &mut lua::State) {

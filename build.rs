@@ -1,7 +1,7 @@
 #![allow(unstable)]
 
-use std::io::Command;
-use std::io::process::{InheritFd, Ignored};
+use std::old_io::Command;
+use std::old_io::process::{InheritFd, Ignored};
 
 fn main() {
     let mut cmd = Command::new("make");
