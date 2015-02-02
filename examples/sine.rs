@@ -1,4 +1,5 @@
-#![allow(non_snake_case,unstable)]
+#![allow(non_snake_case)]
+#![feature(libc,io,core)]
 
 #[macro_use]
 extern crate lua;

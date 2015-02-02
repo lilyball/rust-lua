@@ -7,7 +7,7 @@
 
 int main(int argc, char **argv) {
 	printf("//! Module for configuration based on luaconf.h\n\n");
-	printf("#![allow(non_camel_case_types,unstable)]\n\n");
+	printf("#![allow(non_camel_case_types)]\n\n");
 	printf("extern crate libc;\n\n");
 
 	printf("/// Human-readable major version string\n");

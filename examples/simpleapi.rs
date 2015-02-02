@@ -4,7 +4,8 @@
 // The Rust program loads a Lua script file, sets some Lua variables, runs the
 // Lua script, and reads back the return value.
 
-#![allow(non_snake_case,unstable)]
+#![allow(non_snake_case)]
+#![feature(path,io,os,core)]
 
 extern crate lua;
 

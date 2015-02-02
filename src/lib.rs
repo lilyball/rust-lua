@@ -5,7 +5,8 @@
 #![crate_type = "rlib"]
 
 #![warn(missing_docs)]
-#![allow(non_snake_case,unstable)]
+#![allow(non_snake_case)]
+#![feature(libc,core,std_misc,collections,path,unicode)]
 
 extern crate libc;
 
