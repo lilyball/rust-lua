@@ -6,7 +6,7 @@
 
 #![warn(missing_docs)]
 #![allow(non_snake_case)]
-#![feature(libc,core,std_misc,collections,path,unicode)]
+#![feature(libc,core,std_misc,path,unicode)]
 
 extern crate libc;
 
