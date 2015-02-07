@@ -11,7 +11,8 @@
 extern crate libc;
 
 use libc::c_int;
-use std::{fmt, mem, path, ptr, str, slice};
+use std::{fmt, mem, ptr, str, slice};
+use std::old_path as path;
 use std::ffi::{self, CString};
 use std::num::SignedInt;
 
