@@ -5,12 +5,12 @@
 // Lua script, and reads back the return value.
 
 #![allow(non_snake_case)]
-#![feature(path,io,os,core)]
+#![feature(path,io,env,core)]
 
 extern crate lua;
 
 use std::old_io as io;
-use std::os;
+use std::env;
 use std::iter::range_inclusive;
 
 fn main() {
@@ -25,7 +25,7 @@ fn main() {
             // If something went wrong, error message is at the top of the stack
             let _ = writeln!(&mut io::stderr(),
                              "Couldn't load file: {}", L.describe(-1));
-            os::set_exit_status(1);
+            env::set_exit_status(1);
             return;
         }
     }
@@ -67,7 +67,7 @@ fn main() {
         Err(_) => {
             let _ = writeln!(&mut io::stderr(),
                              "Failed to run script: {}", L.describe(-1));
-            os::set_exit_status(1);
+            env::set_exit_status(1);
             return;
         }
     }
