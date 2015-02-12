@@ -1780,7 +1780,7 @@ impl<'l> RawState<'l> {
             None
         } else {
             let buf = s as *const u8;
-            Some(mem::transmute::<&[u8], &'static [u8]>(slice::from_raw_buf(&buf, sz as usize)))
+            Some(slice::from_raw_parts(buf, sz as usize))
         }
     }
 
@@ -2820,7 +2820,7 @@ impl<'l> RawState<'l> {
         let mut sz: libc::size_t = 0;
         let s = aux::raw::luaL_checklstring(self.L, narg, &mut sz);
         let buf = s as *const u8;
-        mem::transmute::<&[u8], &'static [u8]>(slice::from_raw_buf(&buf, sz as usize))
+        slice::from_raw_parts(buf, sz as usize)
     }
 
     /// Note: the string is returned as 'static to prevent borrowing the
@@ -2839,7 +2839,7 @@ impl<'l> RawState<'l> {
         let cstr = CString::from_slice(d);
         let s = aux::raw::luaL_optlstring(self.L, narg, cstr.as_ptr(), &mut sz);
         let buf = s as *const u8;
-        mem::transmute::<&[u8], &'static [u8]>(slice::from_raw_buf(&buf, sz as usize))
+        slice::from_raw_parts(buf, sz as usize)
     }
 
     pub unsafe fn checknumber(&mut self, narg: i32) -> f64 {
