@@ -267,7 +267,7 @@ impl Drop for State {
 // NB: layout must be identical to State
 // If Drop is ever implemented, add unsafe_no_drop_flag
 #[repr(C)]
-pub struct ExternState<'a> {
+pub struct ExternState {
     L: *mut raw::lua_State,
     stackspace: i32
 }
@@ -278,7 +278,7 @@ pub struct ExternState<'a> {
 // NB: layout must be identical to State
 // If Drop is ever implemented, add unsafe_no_drop_flag
 #[repr(C)]
-pub struct RawState<'a> {
+pub struct RawState {
     L: *mut raw::lua_State,
     stackspace: i32
 }
@@ -323,17 +323,17 @@ impl State {
     }
 }
 
-impl<'l> ExternState<'l> {
+impl ExternState {
     /// Wraps a *raw::lua_State in a ExternState.
-    pub unsafe fn from_lua_State(L: *mut raw::lua_State) -> ExternState<'static> {
+    pub unsafe fn from_lua_State(L: *mut raw::lua_State) -> ExternState {
         #![inline]
         ExternState{ L: L, stackspace: MINSTACK }
     }
 }
 
-impl<'l> RawState<'l> {
+impl RawState {
     /// Wraps a *raw::lua_State in a RawState.
-    pub unsafe fn from_lua_State(L: *mut raw::lua_State) -> RawState<'static> {
+    pub unsafe fn from_lua_State(L: *mut raw::lua_State) -> RawState {
         #![inline]
         RawState{ L: L, stackspace: MINSTACK }
     }
@@ -342,21 +342,21 @@ impl<'l> RawState<'l> {
 // State conversion
 impl State {
     /// Returns the same state as an ExternState
-    pub fn as_extern<'a>(&'a mut self) -> &'a mut ExternState<'a> {
+    pub fn as_extern<'a>(&'a mut self) -> &'a mut ExternState {
         #![inline]
         unsafe { mem::transmute(self) }
     }
 
     /// Returns the same state as a RawState
-    pub fn as_raw<'a>(&'a mut self) -> &'a mut RawState<'a> {
+    pub fn as_raw<'a>(&'a mut self) -> &'a mut RawState {
         #![inline]
         unsafe { mem::transmute(self) }
     }
 }
 
-impl<'a> ExternState<'a> {
+impl ExternState {
     /// Returns the same state as a RawState
-    pub fn as_raw(&mut self) -> &'a mut RawState<'a> {
+    pub fn as_raw(&mut self) -> &mut RawState {
         #![inline]
         unsafe { mem::transmute(self) }
     }
@@ -370,7 +370,7 @@ impl State {
     }
 }
 
-impl<'l> ExternState<'l> {
+impl ExternState {
     /// Provides unsafe access to the underlying *lua_State
     pub unsafe fn get_lua_State(&mut self) -> *mut raw::lua_State {
         #![inline]
@@ -378,7 +378,7 @@ impl<'l> ExternState<'l> {
     }
 }
 
-impl<'l> RawState<'l> {
+impl RawState {
     /// Provides unsafe access to the underlying *lua_State
     pub unsafe fn get_lua_State(&mut self) -> *mut raw::lua_State {
         #![inline]
@@ -1104,7 +1104,7 @@ impl State {
 }
 
 #[allow(missing_docs)]
-impl<'l> ExternState<'l> {
+impl ExternState {
     pub unsafe fn newthread(&mut self) -> State {
         self.as_raw().newthread()
     }
@@ -1587,7 +1587,7 @@ impl<'l> ExternState<'l> {
 }
 
 #[allow(missing_docs)]
-impl<'l> RawState<'l> {
+impl RawState {
     pub unsafe fn newthread(&mut self) -> State {
         #![inline]
         mem::transmute(ExternState::from_lua_State(raw::lua_newthread(self.L)))
@@ -2168,7 +2168,7 @@ impl State {
 }
 
 #[allow(missing_docs)]
-impl<'l> ExternState<'l> {
+impl ExternState {
     pub unsafe fn open_base(&mut self) {
         self.checkstack_(2);
         self.as_raw().open_base()
@@ -2216,7 +2216,7 @@ impl<'l> ExternState<'l> {
 }
 
 #[allow(missing_docs)]
-impl<'l> RawState<'l> {
+impl RawState {
     pub unsafe fn open_base(&mut self) {
         #![inline]
         self.pushcfunction(lib::raw::luaopen_base);
@@ -2577,7 +2577,7 @@ impl State {
 }
 
 #[allow(missing_docs)]
-impl<'l> ExternState<'l> {
+impl ExternState {
     pub unsafe fn registerlib(&mut self, libname: Option<&str>, l: &[(&str,CFunction)]) {
         // internally, luaL_registerlib seems to use 4 stack slots
         self.checkstack_(4);
@@ -2763,7 +2763,7 @@ impl<'l> ExternState<'l> {
 }
 
 #[allow(missing_docs)]
-impl<'l> RawState<'l> {
+impl RawState {
     pub unsafe fn registerlib(&mut self, libname: Option<&str>, l: &[(&str,CFunction)]) {
         #![inline]
         let mut cstrs = Vec::with_capacity(l.len());
@@ -3008,7 +3008,7 @@ pub struct Buffer<'a> {
     /// The buffer internally holds on to the *lua_Buffer that the State wraps,
     /// so to ensure safety it also borrows the &mut ExternState. Use this
     /// field to get mutable access to the State while the buffer is alive.
-    pub L: &'a mut ExternState<'a>
+    pub L: &'a mut ExternState
 }
 
 /// Size of the internal buffer used by Buffer and returned by prepbuffer()
@@ -3314,7 +3314,7 @@ impl State {
 }
 
 #[allow(missing_docs)]
-impl<'l> ExternState<'l> {
+impl ExternState {
     pub fn getstack(&mut self, level: i32) -> Option<Debug> {
         self.as_raw().getstack(level)
     }
@@ -3370,7 +3370,7 @@ impl<'l> ExternState<'l> {
 }
 
 #[allow(missing_docs)]
-impl<'l> RawState<'l> {
+impl RawState {
     pub fn getstack(&mut self, level: i32) -> Option<Debug> {
         #![inline]
         let mut ar: Debug = std::default::Default::default();
