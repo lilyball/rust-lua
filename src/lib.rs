@@ -14,6 +14,7 @@ use libc::c_int;
 use std::{fmt, mem, ptr, str, slice};
 use std::old_path as path;
 use std::ffi::{self, CString};
+use std::marker;
 use std::num::SignedInt;
 
 /// Human-readable major version string
@@ -245,7 +246,8 @@ impl fmt::Debug for PCallError {
 #[repr(C)]
 pub struct State {
     L: *mut raw::lua_State,
-    _stackspace: i32
+    _stackspace: i32,
+    _marker: marker::PhantomData<raw::lua_State>
 }
 
 impl Drop for State {
@@ -269,7 +271,8 @@ impl Drop for State {
 #[repr(C)]
 pub struct ExternState<'a> {
     L: *mut raw::lua_State,
-    stackspace: i32
+    stackspace: i32,
+    _marker: marker::PhantomData<&'a mut raw::lua_State>
 }
 
 /// RawState is a Lua State that represents raw, unchecked access. All
@@ -280,7 +283,8 @@ pub struct ExternState<'a> {
 #[repr(C)]
 pub struct RawState<'a> {
     L: *mut raw::lua_State,
-    stackspace: i32
+    stackspace: i32,
+    _marker: marker::PhantomData<&'a mut raw::lua_State>
 }
 
 // State construction
@@ -297,7 +301,7 @@ impl State {
             let L = raw::lua_newstate(alloc, ptr::null_mut());
             if !L.is_null() {
                 raw::lua_atpanic(L, panic);
-                Some(State{ L: L, _stackspace: MINSTACK })
+                Some(State{ L: L, _stackspace: MINSTACK, _marker: marker::PhantomData })
             } else {
                 None
             }
@@ -327,7 +331,7 @@ impl<'l> ExternState<'l> {
     /// Wraps a *raw::lua_State in a ExternState.
     pub unsafe fn from_lua_State(L: *mut raw::lua_State) -> ExternState<'static> {
         #![inline]
-        ExternState{ L: L, stackspace: MINSTACK }
+        ExternState{ L: L, stackspace: MINSTACK, _marker: marker::PhantomData }
     }
 }
 
@@ -335,7 +339,7 @@ impl<'l> RawState<'l> {
     /// Wraps a *raw::lua_State in a RawState.
     pub unsafe fn from_lua_State(L: *mut raw::lua_State) -> RawState<'static> {
         #![inline]
-        RawState{ L: L, stackspace: MINSTACK }
+        RawState{ L: L, stackspace: MINSTACK, _marker: marker::PhantomData }
     }
 }
 
@@ -1805,7 +1809,7 @@ impl<'l> RawState<'l> {
         if s.is_null() {
             None
         } else {
-            Some(ExternState { L: s, stackspace: 0 })
+            Some(ExternState { L: s, stackspace: 0, _marker: marker::PhantomData })
         }
     }
 
@@ -2749,7 +2753,7 @@ impl<'l> ExternState<'l> {
         self.as_raw().getmetatable_reg(tname)
     }
 
-    pub fn buffinit<'a>(&'a mut self) -> Buffer<'a> {
+    pub fn buffinit<'a: 'l>(&'a mut self) -> Buffer<'a> {
         #![inline]
         let mut B = aux::raw::luaL_Buffer{
             p: ptr::null_mut(),
