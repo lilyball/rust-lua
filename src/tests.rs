@@ -4,7 +4,7 @@ use Type;
 use raw;
 
 use libc;
-use std::thread::Thread;
+use std::thread::Builder;
 
 #[test]
 fn test_state_init() {
@@ -21,10 +21,10 @@ fn test_error() {
 
 #[test]
 fn test_errorstr() {
-    let res = Thread::scoped::<(), _>(move || {
+    let res = Builder::new().spawn(move || {
         let mut s = State::new();
         s.errorstr("some err");
-    }).join();
+    }).unwrap().join();
     let err = res.err().unwrap();
     let expected = "unprotected error in call to Lua API (some err)";
     let s = err.downcast_ref::<String>();
@@ -92,16 +92,16 @@ fn test_checkoption() {
     }
     assert_eq!(*s.checkoption(1, Some("three"), &lst), CheckOptionEnum::Three);
 
-    let res = Thread::scoped(move || {
+    let res = Builder::new().spawn(move || {
         let mut s = State::new();
         s.checkoption(1, None, &lst);
-    }).join();
+    }).unwrap().join();
     assert!(res.is_err(), "expected error from checkoption");
 
-    let res = Thread::scoped(move || {
+    let res = Builder::new().spawn(move || {
         let mut s = State::new();
         s.checkoption(1, Some("four"), &lst);
-    }).join();
+    }).unwrap().join();
     assert!(res.is_err(), "expected error from checkoption");
 }
 
