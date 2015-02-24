@@ -1,15 +1,12 @@
-#![feature(io)]
+#![feature(process)]
 
-use std::old_io::Command;
-use std::old_io::process::{InheritFd, Ignored};
+use std::process::{Command,Stdio};
 
 fn main() {
     let mut cmd = Command::new("make");
     cmd.arg("cargo-prep");
     println!("running: {:?}", cmd);
-    assert!(cmd.stdin(Ignored)
-               .stdout(InheritFd(1))
-               .stderr(InheritFd(2))
+    assert!(cmd.stdin(Stdio::null())
                .status()
                .unwrap()
                .success());
