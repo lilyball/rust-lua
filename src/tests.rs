@@ -4,7 +4,7 @@ use Type;
 use raw;
 
 use libc;
-use std::thread::Thread;
+use std::thread;
 
 #[test]
 fn test_state_init() {
@@ -21,7 +21,7 @@ fn test_error() {
 
 #[test]
 fn test_errorstr() {
-    let res = Thread::scoped::<(), _>(move || {
+    let res = thread::spawn(|| {
         let mut s = State::new();
         s.errorstr("some err");
     }).join();
@@ -92,13 +92,13 @@ fn test_checkoption() {
     }
     assert_eq!(*s.checkoption(1, Some("three"), &lst), CheckOptionEnum::Three);
 
-    let res = Thread::scoped(move || {
+    let res = thread::spawn(move || {
         let mut s = State::new();
         s.checkoption(1, None, &lst);
     }).join();
     assert!(res.is_err(), "expected error from checkoption");
 
-    let res = Thread::scoped(move || {
+    let res = thread::spawn(move || {
         let mut s = State::new();
         s.checkoption(1, Some("four"), &lst);
     }).join();

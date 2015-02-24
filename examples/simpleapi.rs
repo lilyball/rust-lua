@@ -5,7 +5,7 @@
 // Lua script, and reads back the return value.
 
 #![allow(non_snake_case)]
-#![feature(path,io,env,core)]
+#![feature(old_path,old_io,env,core)]
 
 extern crate lua;
 

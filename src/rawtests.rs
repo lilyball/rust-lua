@@ -60,9 +60,9 @@ fn test_dostring() {
         let L = aux::raw::luaL_newstate();
         raw::lua_atpanic(L, panic_helper);
         let s = "function foo(x,y) return x+y end";
-        let ret = aux::raw::luaL_dostring(L, CString::from_slice(s.as_bytes()).as_ptr());
+        let ret = aux::raw::luaL_dostring(L, CString::new(s).unwrap().as_ptr());
         assert_eq!(ret, 0);
-        raw::lua_getglobal(L, CString::from_slice(b"foo").as_ptr());
+        raw::lua_getglobal(L, CString::new(b"foo").unwrap().as_ptr());
 
         raw::lua_pushinteger(L, 5);
         raw::lua_pushinteger(L, 3);
