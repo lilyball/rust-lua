@@ -12,7 +12,7 @@ fn test_state_init() {
 }
 
 #[test]
-#[should_fail]
+#[should_panic]
 fn test_error() {
     let mut s = State::new();
     s.pushinteger(42);

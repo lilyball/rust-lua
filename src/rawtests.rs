@@ -44,7 +44,7 @@ fn test_luaL_newstate() {
 }
 
 #[test]
-#[should_fail]
+#[should_panic]
 fn test_lua_error() {
     unsafe {
         let L = aux::raw::luaL_newstate();
