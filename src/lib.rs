@@ -6,16 +6,17 @@
 
 #![warn(missing_docs)]
 #![allow(non_snake_case)]
-#![feature(libc,core,old_path,unicode,unsafe_no_drop_flag)]
+#![feature(libc,core,unicode,unsafe_no_drop_flag,std_misc)]
 
 extern crate libc;
 
 use libc::c_int;
 use std::{fmt, mem, ptr, str, slice};
-use std::old_path as path;
-use std::ffi::{CStr, CString};
+use std::ffi::{AsOsStr, CStr, CString};
 use std::marker;
 use std::num::SignedInt;
+use std::os::unix::OsStrExt;
+use std::path::Path;
 
 /// Human-readable major version string
 pub const VERSION: &'static str = config::LUA_VERSION;
@@ -2511,7 +2512,7 @@ impl State {
     /// Loads a file as a Lua chunk (but does not run it).
     /// If the `filename` is None, this loads from standard input.
     /// Fails the task if `filename` has any interior NULs.
-    pub fn loadfile(&mut self, filename: Option<&path::Path>) -> Result<(),LoadFileError> {
+    pub fn loadfile(&mut self, filename: Option<&Path>) -> Result<(),LoadFileError> {
         #![inline(always)]
         unsafe { self.as_extern().loadfile(filename) }
     }
@@ -2554,7 +2555,7 @@ impl State {
 
     /// Loads and runs the given file. It returns `true` if there are no errors
     /// or `false` in case of errors.
-    pub fn dofile(&mut self, filename: Option<&path::Path>) -> bool {
+    pub fn dofile(&mut self, filename: Option<&Path>) -> bool {
         #![inline(always)]
         unsafe { self.as_extern().dofile(filename) }
     }
@@ -2712,7 +2713,7 @@ impl<'l> ExternState<'l> {
         self.as_raw().unref(t, r)
     }
 
-    pub unsafe fn loadfile(&mut self, filename: Option<&path::Path>) -> Result<(),LoadFileError> {
+    pub unsafe fn loadfile(&mut self, filename: Option<&Path>) -> Result<(),LoadFileError> {
         self.checkstack_(1);
         self.as_raw().loadfile(filename)
     }
@@ -2739,7 +2740,7 @@ impl<'l> ExternState<'l> {
         self.as_raw().argcheck(cond, narg, extramsg)
     }
 
-    pub unsafe fn dofile(&mut self, filename: Option<&path::Path>) -> bool {
+    pub unsafe fn dofile(&mut self, filename: Option<&Path>) -> bool {
         self.checkstack_(1);
         self.as_raw().dofile(filename)
     }
@@ -2928,9 +2929,11 @@ impl<'l> RawState<'l> {
         aux::raw::luaL_unref(self.L, t as c_int, r as c_int)
     }
 
-    pub unsafe fn loadfile(&mut self, filename: Option<&path::Path>) -> Result<(),LoadFileError> {
+    pub unsafe fn loadfile(&mut self, filename: Option<&Path>) -> Result<(),LoadFileError> {
         #![inline]
-        let cstr = filename.map(|p| CString::new(p.as_vec()).unwrap());
+        let cstr = if let Some(filename) = filename {
+            Some(try!(filename.as_os_str().to_cstring().or(Err(LoadFileError::ErrFile))))
+        } else { None };
         let ptr = cstr.as_ref().map_or(ptr::null(), |cstr| cstr.as_ptr());
         match aux::raw::luaL_loadfile(self.L, ptr) {
             0 => Ok(()),
@@ -2985,9 +2988,14 @@ impl<'l> RawState<'l> {
         aux::raw::luaL_argcheck(self.L, cond, narg as c_int, cstr.as_ptr())
     }
 
-    pub unsafe fn dofile(&mut self, filename: Option<&path::Path>) -> bool {
+    pub unsafe fn dofile(&mut self, filename: Option<&Path>) -> bool {
         #![inline]
-        let cstr = filename.map(|p| CString::new(p.as_vec()).unwrap());
+        let cstr = if let Some(filename) = filename {
+            match filename.as_os_str().to_cstring() {
+                Ok(cstr) => Some(cstr),
+                Err(_) => return false
+            }
+        } else { None };
         let name = cstr.map_or(ptr::null(), |c| c.as_ptr());
         aux::raw::luaL_dofile(self.L, name) == 0
     }

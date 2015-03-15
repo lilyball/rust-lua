@@ -1,39 +1,40 @@
 #![allow(non_snake_case)]
-#![feature(libc,old_io)]
+#![feature(libc,io)]
 
 #[macro_use]
 extern crate lua;
 extern crate libc;
 
-use std::old_io as io;
-use std::old_io::BufferedReader;
+use std::io;
+use std::io::prelude::*;
 use std::num::Float;
 
 pub fn repl(L: &mut lua::State) {
-    let mut stdin = BufferedReader::new(io::stdin());
-    let stdout = &mut io::stdout() as &mut io::Writer;
-    let stderr = &mut io::stderr() as &mut io::Writer;
+    let mut stdin = io::stdin();
+    let mut stdout = io::stdout();
+    let mut stderr = io::stderr();
+    let mut line = String::new();
     loop {
         L.settop(0); // clear the stack
-        let _ = write!(stdout, "> ");
+        let _ = write!(&mut stdout, "> ");
         let _ = stdout.flush();
-        let mut line = match stdin.read_line() {
-            Ok(line) => line,
-            Err(_) => break
-        };
+        line.clear();
+        if let Err(_) = stdin.read_line(&mut line) {
+            break
+        }
         if line.starts_with("=") {
             line = format!("return {}", &line[1..]);
         }
         match L.loadbuffer(&line, "=stdin") {
             Ok(_) => (),
-            Err(err) => { let _ = writeln!(stderr, "{:?}", err); continue; }
+            Err(err) => { let _ = writeln!(&mut stderr, "{:?}", err); continue; }
         }
         match L.pcall(0, lua::MULTRET, 0) {
             Ok(_) => (),
             Err(_) => {
                 match L.tostring(-1) {
-                    Some(msg) => { let _ = writeln!(stderr, "{}", msg); }
-                    None => { let _ = writeln!(stderr, "(error object is not a string)"); }
+                    Some(msg) => { let _ = writeln!(&mut stderr, "{}", msg); }
+                    None => { let _ = writeln!(&mut stderr, "(error object is not a string)"); }
                 }
             }
         }
@@ -44,7 +45,7 @@ pub fn repl(L: &mut lua::State) {
             match L.pcall(nargs, 0, 0) {
                 Ok(_) => (),
                 Err(_) => {
-                    let _ = writeln!(stderr, "error calling 'print' ({})", L.describe(-1));
+                    let _ = writeln!(&mut stderr, "error calling 'print' ({})", L.describe(-1));
                     continue;
                 }
             }

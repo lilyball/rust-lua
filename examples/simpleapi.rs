@@ -5,12 +5,13 @@
 // Lua script, and reads back the return value.
 
 #![allow(non_snake_case)]
-#![feature(old_path,old_io,core,exit_status)]
+#![feature(core,exit_status)]
 
 extern crate lua;
 
-use std::old_io as io;
 use std::env;
+use std::io::{self, Write};
+use std::path::Path;
 use std::iter::range_inclusive;
 
 fn main() {
