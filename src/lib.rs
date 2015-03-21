@@ -15,7 +15,7 @@ use std::{fmt, mem, ptr, str, slice};
 use std::ffi::{AsOsStr, CStr, CString};
 use std::marker;
 use std::num::SignedInt;
-use std::os::unix::OsStrExt;
+use std::os::unix::ffi::OsStrExt;
 use std::path::Path;
 
 /// Human-readable major version string
