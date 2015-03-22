@@ -319,11 +319,9 @@ impl State {
                 }
             }
         }
-        extern "C" fn panic(L: *mut raw::lua_State) -> c_int {
-            unsafe {
-                let s = RawState::from_lua_State(L).describe_(-1, false);
-                panic!("unprotected error in call to Lua API ({})", s);
-            }
+        unsafe extern "C" fn panic(L: *mut raw::lua_State) -> c_int {
+            let s = RawState::from_lua_State(L).describe_(-1, false);
+            panic!("unprotected error in call to Lua API ({})", s);
         }
     }
 }
