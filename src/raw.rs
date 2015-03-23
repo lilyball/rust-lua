@@ -46,15 +46,16 @@ pub type lua_State = libc::c_void;
 pub type lua_CFunction = unsafe extern "C" fn(L: *mut lua_State) -> c_int;
 
 /// Function type for reading blocks when loading Lua chunks.
-pub type lua_Reader = extern "C" fn(L: *mut lua_State, ud: *mut libc::c_void,
-                                    sz: *mut libc::size_t) -> *const libc::c_char;
+pub type lua_Reader = unsafe extern "C" fn(L: *mut lua_State, ud: *mut libc::c_void,
+                                           sz: *mut libc::size_t) -> *const libc::c_char;
 /// Function type for writing blocks when dumping Lua chunks.
-pub type lua_Writer = extern "C" fn(L: *mut lua_State, p: *const libc::c_void, sz: libc::size_t,
-                                    ud: *mut libc::c_void) -> libc::c_int;
+pub type lua_Writer = unsafe extern "C" fn(L: *mut lua_State, p: *const libc::c_void, sz: libc::size_t,
+                                           ud: *mut libc::c_void) -> libc::c_int;
 
 /// Prototype for memory-allocation functions
-pub type lua_Alloc = extern "C" fn(ud: *mut libc::c_void, ptr: *mut libc::c_void,
-                                osize: libc::size_t, nsize: libc::size_t) -> *mut libc::c_void;
+pub type lua_Alloc = unsafe extern "C" fn(ud: *mut libc::c_void, ptr: *mut libc::c_void,
+                                          osize: libc::size_t, nsize: libc::size_t)
+                                         -> *mut libc::c_void;
 
 // lua_State manipulation
 extern {

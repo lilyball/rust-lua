@@ -56,7 +56,7 @@ fn test_describe() {
     s.pushcfunction(dummy);
     assert_eq!(s.typename(-1), "function");
 
-    extern "C" fn dummy(_L: *mut ::raw::lua_State) -> ::libc::c_int {
+    unsafe extern "C" fn dummy(_L: *mut ::raw::lua_State) -> ::libc::c_int {
         0
     }
 }
@@ -117,7 +117,7 @@ fn test_tocfunction() {
     s.pushcfunction(cfunc);
     assert_eq!(s.tocfunction(2).map(|f| f as *const ()), Some(cfunc as *const ()));
 
-    extern "C" fn cfunc(_L: *mut raw::lua_State) -> libc::c_int { 0 }
+    unsafe extern "C" fn cfunc(_L: *mut raw::lua_State) -> libc::c_int { 0 }
 }
 
 #[test]

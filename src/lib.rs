@@ -308,22 +308,18 @@ impl State {
             }
         };
 
-        extern "C" fn alloc(_ud: *mut libc::c_void, ptr: *mut libc::c_void, _osize: libc::size_t,
-                            nsize: libc::size_t) -> *mut libc::c_void {
-            unsafe {
-                if nsize == 0 {
-                    libc::free(ptr as *mut libc::c_void);
-                    ptr::null_mut()
-                } else {
-                    libc::realloc(ptr, nsize)
-                }
+        unsafe extern "C" fn alloc(_ud: *mut libc::c_void, ptr: *mut libc::c_void,
+                                   _osize: libc::size_t, nsize: libc::size_t) -> *mut libc::c_void {
+            if nsize == 0 {
+                libc::free(ptr as *mut libc::c_void);
+                ptr::null_mut()
+            } else {
+                libc::realloc(ptr, nsize)
             }
         }
-        extern "C" fn panic(L: *mut raw::lua_State) -> c_int {
-            unsafe {
-                let s = RawState::from_lua_State(L).describe_(-1, false);
-                panic!("unprotected error in call to Lua API ({})", s);
-            }
+        unsafe extern "C" fn panic(L: *mut raw::lua_State) -> c_int {
+            let s = RawState::from_lua_State(L).describe_(-1, false);
+            panic!("unprotected error in call to Lua API ({})", s);
         }
     }
 }

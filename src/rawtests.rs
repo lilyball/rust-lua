@@ -6,20 +6,18 @@ use aux;
 
 // implement the same function that luaL_newstate uses, so we can test lua_newstate directly
 // FIXME (#10025): We can't define this as `unsafe extern "C"`
-extern "C" fn alloc_helper(_ud: *mut libc::c_void, ptr: *mut libc::c_void, _osize: libc::size_t,
-                         nsize: libc::size_t) -> *mut libc::c_void {
-    unsafe {
-        if nsize == 0 {
-            libc::free(ptr as *mut libc::c_void);
-            ptr::null_mut()
-        } else {
-            libc::realloc(ptr, nsize)
-        }
+unsafe extern "C" fn alloc_helper(_ud: *mut libc::c_void, ptr: *mut libc::c_void,
+                                  _osize: libc::size_t, nsize: libc::size_t) -> *mut libc::c_void {
+    if nsize == 0 {
+        libc::free(ptr as *mut libc::c_void);
+        ptr::null_mut()
+    } else {
+        libc::realloc(ptr, nsize)
     }
 }
 
 // panic function should panic!() so Lua doesn't abort
-extern "C" fn panic_helper(_L: *mut raw::lua_State) -> libc::c_int {
+unsafe extern "C" fn panic_helper(_L: *mut raw::lua_State) -> libc::c_int {
     panic!("lua error");
 }
 
