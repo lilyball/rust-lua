@@ -29,7 +29,7 @@ fn test_errorstr() {
     let expected = "unprotected error in call to Lua API (some err)";
     let s = err.downcast_ref::<String>();
     if s.is_some() {
-        assert_eq!(s.unwrap().as_slice(), expected);
+        assert_eq!(&s.unwrap()[..], expected);
     } else {
         let s = err.downcast_ref::<&'static str>();
         if s.is_some() {

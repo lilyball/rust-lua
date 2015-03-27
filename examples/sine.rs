@@ -1,5 +1,7 @@
-#![allow(non_snake_case)]
 #![feature(libc)]
+
+#![allow(non_snake_case)]
+#![allow(trivial_numeric_casts)] // FIXME: rust-lang/rfcs#1020
 
 #[macro_use]
 extern crate lua;

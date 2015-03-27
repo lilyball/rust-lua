@@ -9,7 +9,7 @@ use aux;
 unsafe extern "C" fn alloc_helper(_ud: *mut libc::c_void, ptr: *mut libc::c_void,
                                   _osize: libc::size_t, nsize: libc::size_t) -> *mut libc::c_void {
     if nsize == 0 {
-        libc::free(ptr as *mut libc::c_void);
+        libc::free(ptr);
         ptr::null_mut()
     } else {
         libc::realloc(ptr, nsize)
