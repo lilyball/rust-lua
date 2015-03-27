@@ -6,7 +6,8 @@
 
 #![warn(missing_docs)]
 #![allow(non_snake_case)]
-#![feature(libc,core,unicode,unsafe_no_drop_flag,std_misc)]
+#![allow(trivial_numeric_casts)] // FIXME: rust-lang/rfcs#1020
+#![feature(libc,core,unicode,unsafe_no_drop_flag)]
 
 extern crate libc;
 
@@ -67,13 +68,13 @@ mod tests;
 macro_rules! luaassert{
     ($state:expr, $cond:expr, $msg:expr) => {
         if !$cond {
-            $state.errorstr($msg.as_slice());
+            $state.errorstr(&$msg);
         }
     };
     ($state:expr, $cond:expr, $($arg:expr),+) => {
         if !$cond {
             let msg = format!($($arg),+);
-            $state.errorstr(msg.as_slice());
+            $state.errorstr(&msg);
         }
     }
 }
@@ -311,7 +312,7 @@ impl State {
         unsafe extern "C" fn alloc(_ud: *mut libc::c_void, ptr: *mut libc::c_void,
                                    _osize: libc::size_t, nsize: libc::size_t) -> *mut libc::c_void {
             if nsize == 0 {
-                libc::free(ptr as *mut libc::c_void);
+                libc::free(ptr);
                 ptr::null_mut()
             } else {
                 libc::realloc(ptr, nsize)
@@ -3332,7 +3333,7 @@ impl<'l> ExternState<'l> {
             luaassert!(self, self.gettop() >= 1 && self.isfunction(-1),
                        "getinfo: top stack value is not a function");
         }
-        if what.find(['f', 'L'].as_slice()).is_some() {
+        if what.find(&['f', 'L'][..]).is_some() {
             self.checkstack_(1);
         }
         self.as_raw().getinfo(what, ar)
