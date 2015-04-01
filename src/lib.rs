@@ -7,7 +7,7 @@
 #![warn(missing_docs)]
 #![allow(non_snake_case)]
 #![allow(trivial_numeric_casts)] // FIXME: rust-lang/rfcs#1020
-#![feature(libc,core,unicode,unsafe_no_drop_flag)]
+#![feature(libc,core,unicode,unsafe_no_drop_flag,filling_drop)]
 
 extern crate libc;
 
@@ -254,11 +254,10 @@ pub struct State {
 
 impl Drop for State {
     fn drop(&mut self) {
-        if !self.L.is_null() {
+        if !self.L.is_null() && self.L as usize != mem::POST_DROP_USIZE {
             unsafe {
                 raw::lua_close(self.L);
             }
-            self.L = ptr::null_mut();
         }
     }
 }
