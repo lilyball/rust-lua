@@ -7,7 +7,7 @@
 #![warn(missing_docs)]
 #![allow(non_snake_case)]
 #![allow(trivial_numeric_casts)] // FIXME: rust-lang/rfcs#1020
-#![feature(libc,core,unicode,unsafe_no_drop_flag,filling_drop)]
+#![feature(convert,libc,unicode,unsafe_no_drop_flag,filling_drop)]
 
 extern crate libc;
 
@@ -15,7 +15,6 @@ use libc::c_int;
 use std::{fmt, mem, ptr, str, slice};
 use std::ffi::{AsOsStr, CStr, CString};
 use std::marker;
-use std::num::SignedInt;
 use std::os::unix::ffi::OsStrExt;
 use std::path::Path;
 
@@ -2928,7 +2927,7 @@ impl<'l> RawState<'l> {
     pub unsafe fn loadfile(&mut self, filename: Option<&Path>) -> Result<(),LoadFileError> {
         #![inline]
         let cstr = if let Some(filename) = filename {
-            Some(try!(filename.as_os_str().to_cstring().or(Err(LoadFileError::ErrFile))))
+            Some(try!(filename.as_os_str().to_cstring().ok_or(LoadFileError::ErrFile)))
         } else { None };
         let ptr = cstr.as_ref().map_or(ptr::null(), |cstr| cstr.as_ptr());
         match aux::raw::luaL_loadfile(self.L, ptr) {
@@ -2988,8 +2987,8 @@ impl<'l> RawState<'l> {
         #![inline]
         let cstr = if let Some(filename) = filename {
             match filename.as_os_str().to_cstring() {
-                Ok(cstr) => Some(cstr),
-                Err(_) => return false
+                Some(cstr) => Some(cstr),
+                None => return false
             }
         } else { None };
         let name = cstr.map_or(ptr::null(), |c| c.as_ptr());
