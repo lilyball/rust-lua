@@ -9,7 +9,6 @@ extern crate libc;
 
 use std::io;
 use std::io::prelude::*;
-use std::num::Float;
 
 pub fn repl(L: &mut lua::State) {
     let mut stdin = io::stdin();

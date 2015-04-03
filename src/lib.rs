@@ -7,7 +7,8 @@
 #![warn(missing_docs)]
 #![allow(non_snake_case)]
 #![allow(trivial_numeric_casts)] // FIXME: rust-lang/rfcs#1020
-#![feature(libc,core,unicode,unsafe_no_drop_flag,filling_drop)]
+#![feature(convert,libc,unicode)]
+#![feature(unsafe_no_drop_flag,filling_drop)]
 
 extern crate libc;
 
@@ -15,8 +16,6 @@ use libc::c_int;
 use std::{fmt, mem, ptr, str, slice};
 use std::ffi::{AsOsStr, CStr, CString};
 use std::marker;
-use std::num::SignedInt;
-use std::os::unix::ffi::OsStrExt;
 use std::path::Path;
 
 /// Human-readable major version string
@@ -115,7 +114,7 @@ impl Type {
 
 /// Garbage collection options (used with State.gc())
 //#[allow(dead_code)] // FIXME(rust-lang/rust#17632): dead_code warning is wrong here
-#[derive(Copy)]
+#[derive(Copy,Clone)]
 pub enum GC {
     /// Stops the garbage collector
     Stop = raw::LUA_GCSTOP as isize,
@@ -154,7 +153,7 @@ pub type Writer = raw::lua_Writer;
 pub type Alloc = raw::lua_Alloc;
 
 /// State.load() errors
-#[derive(Copy)]
+#[derive(Copy,Clone)]
 pub enum LoadError {
     /// Syntax error during pre-compilation
     ErrSyntax = raw::LUA_ERRSYNTAX as isize,
@@ -172,7 +171,7 @@ impl fmt::Debug for LoadError {
 }
 
 /// State.loadfile() errors
-#[derive(Copy)]
+#[derive(Copy,Clone)]
 pub enum LoadFileError {
     /// Syntax error during pre-compilation
     ErrSyntax = raw::LUA_ERRSYNTAX as isize,
@@ -193,7 +192,7 @@ impl fmt::Debug for LoadFileError {
 }
 
 /// State.pcall() errors
-#[derive(Copy)]
+#[derive(Copy,Clone)]
 pub enum PCallError {
     /// Runtime error
     ErrRun = raw::LUA_ERRRUN as isize,
@@ -2928,7 +2927,7 @@ impl<'l> RawState<'l> {
     pub unsafe fn loadfile(&mut self, filename: Option<&Path>) -> Result<(),LoadFileError> {
         #![inline]
         let cstr = if let Some(filename) = filename {
-            Some(try!(filename.as_os_str().to_cstring().or(Err(LoadFileError::ErrFile))))
+            Some(try!(filename.as_os_str().to_cstring().ok_or(LoadFileError::ErrFile)))
         } else { None };
         let ptr = cstr.as_ref().map_or(ptr::null(), |cstr| cstr.as_ptr());
         match aux::raw::luaL_loadfile(self.L, ptr) {
@@ -2986,12 +2985,7 @@ impl<'l> RawState<'l> {
 
     pub unsafe fn dofile(&mut self, filename: Option<&Path>) -> bool {
         #![inline]
-        let cstr = if let Some(filename) = filename {
-            match filename.as_os_str().to_cstring() {
-                Ok(cstr) => Some(cstr),
-                Err(_) => return false
-            }
-        } else { None };
+        let cstr = filename.and_then(|s| s.as_os_str().to_cstring());
         let name = cstr.map_or(ptr::null(), |c| c.as_ptr());
         aux::raw::luaL_dofile(self.L, name) == 0
     }
@@ -3106,7 +3100,7 @@ impl<'a> Buffer<'a> {
 
 /* Debug API */
 /// Event codes
-#[derive(Copy)]
+#[derive(Copy,Clone)]
 pub enum DebugEvent {
     /// The call hook is called when the interpreter calls a function. The hook is called
     /// just after Lua enters the new function, before the function gets its arguments.
