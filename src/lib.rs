@@ -14,7 +14,7 @@ extern crate libc;
 
 use libc::c_int;
 use std::{fmt, mem, ptr, str, slice};
-use std::ffi::{AsOsStr, CStr, CString};
+use std::ffi::{CStr, CString};
 use std::marker;
 use std::path::Path;
 
