@@ -12,7 +12,6 @@ extern crate lua;
 use std::env;
 use std::io::{self, Write};
 use std::path::Path;
-use std::iter::range_inclusive;
 
 fn main() {
     let mut L = lua::State::new();
@@ -53,7 +52,7 @@ fn main() {
      * of the stack, so that after it has been called, the table is at the
      * top of the stack.
      */
-    for i in range_inclusive(1, 5) {
+    for i in 1..6 {
         L.pushinteger(i);   // Push the table index
         L.pushinteger(i*2); // Push the cell value
         L.rawset(-3);       // Stores the pair in the table
