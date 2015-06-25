@@ -6,3 +6,7 @@ description = "Lua 5.1 bindings for Rust"
 license = "MIT"
 readme = "README.md"
 build = "build.rs"
+
+[dependencies]
+
+libc = "0.1.8"
