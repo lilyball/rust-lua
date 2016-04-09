@@ -17,6 +17,7 @@ use std::{fmt, mem, ptr, str, slice};
 use std::ffi::{CStr, CString};
 use std::marker;
 use std::path::Path;
+use std::os::unix::ffi::OsStrExt;
 
 /// Human-readable major version string
 pub const VERSION: &'static str = config::LUA_VERSION;
@@ -2927,9 +2928,16 @@ impl<'l> RawState<'l> {
     pub unsafe fn loadfile(&mut self, filename: Option<&Path>) -> Result<(),LoadFileError> {
         #![inline]
         let cstr = if let Some(filename) = filename {
-            Some(try!(filename.as_os_str().to_cstring().ok_or(LoadFileError::ErrFile)))
-        } else { None };
+            match CString::new(filename.as_os_str().as_bytes()) {
+                Ok(val) => Some(val),
+                Err(err) => return Err(LoadFileError::ErrFile)
+            }
+        } else {
+            None
+        };
+
         let ptr = cstr.as_ref().map_or(ptr::null(), |cstr| cstr.as_ptr());
+
         match aux::raw::luaL_loadfile(self.L, ptr) {
             0 => Ok(()),
             raw::LUA_ERRSYNTAX => Err(LoadFileError::ErrSyntax),
@@ -2985,7 +2993,16 @@ impl<'l> RawState<'l> {
 
     pub unsafe fn dofile(&mut self, filename: Option<&Path>) -> bool {
         #![inline]
-        let cstr = filename.and_then(|s| s.as_os_str().to_cstring());
+        let cstr = match filename {
+            Some(s) => {
+                match CString::new(s.as_os_str().as_bytes()) {
+                    Ok(val) => Some(val),
+                    Err(_) => None
+                }
+            },
+            None => None
+        };
+
         let name = cstr.map_or(ptr::null(), |c| c.as_ptr());
         aux::raw::luaL_dofile(self.L, name) == 0
     }
@@ -3034,9 +3051,8 @@ impl<'a> Buffer<'a> {
     /// Adds the char `c` as utf-8 bytes to the buffer.
     pub unsafe fn addchar(&mut self, c: char) {
         #![inline]
-        let mut buf = [0u8; 4];
-        let count = c.encode_utf8(&mut buf).unwrap();
-        self.addbytes(&buf[..count]);
+        let buf = c.encode_utf8();
+        self.addbytes(buf.as_slice());
     }
 
     /// Adds to the buffer a string of length `n` previously copied to the
