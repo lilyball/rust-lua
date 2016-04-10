@@ -2280,7 +2280,11 @@ impl<'l> RawState<'l> {
     }
 }
 
+/// Predefined reference that is guaranteed to be different than any valid
+/// reference returned from `ref_()`.
 pub const NOREF: i32 = aux::raw::LUA_NOREF as i32;
+/// Predefined reference returned from `ref_()` if the object at the top of the
+/// stack is `nil`.
 pub const REFNIL: i32 = aux::raw::LUA_REFNIL as i32;
 
 // Functions from auxlib

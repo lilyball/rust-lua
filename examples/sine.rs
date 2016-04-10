@@ -9,7 +9,7 @@ use std::io;
 use std::io::prelude::*;
 
 pub fn repl(L: &mut lua::State) {
-    let mut stdin = io::stdin();
+    let stdin = io::stdin();
     let mut stdout = io::stdout();
     let mut stderr = io::stderr();
     let mut line = String::new();
