@@ -2,11 +2,11 @@
 name = "lua"
 version = "0.2.0"
 dependencies = [
- "libc 0.1.8 (registry+https://github.com/rust-lang/crates.io-index)",
+ "libc 0.2.9 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
 name = "libc"
-version = "0.1.8"
+version = "0.2.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 
