@@ -7,7 +7,7 @@
 #![warn(missing_docs)]
 #![allow(non_snake_case)]
 #![allow(trivial_numeric_casts)] // FIXME: rust-lang/rfcs#1020
-#![feature(convert,unicode)]
+#![feature(unicode)]
 #![feature(unsafe_no_drop_flag,filling_drop)]
 
 extern crate libc;
@@ -17,6 +17,7 @@ use std::{fmt, mem, ptr, str, slice};
 use std::ffi::{CStr, CString};
 use std::marker;
 use std::path::Path;
+use std::os::unix::ffi::OsStrExt;
 
 /// Human-readable major version string
 pub const VERSION: &'static str = config::LUA_VERSION;
@@ -2927,7 +2928,10 @@ impl<'l> RawState<'l> {
     pub unsafe fn loadfile(&mut self, filename: Option<&Path>) -> Result<(),LoadFileError> {
         #![inline]
         let cstr = if let Some(filename) = filename {
-            Some(try!(filename.as_os_str().to_cstring().ok_or(LoadFileError::ErrFile)))
+            match CString::new(filename.as_os_str().as_bytes()) {
+                Ok(val) => Some(val),
+                Err(_) => return Err(LoadFileError::ErrFile)
+            }
         } else { None };
         let ptr = cstr.as_ref().map_or(ptr::null(), |cstr| cstr.as_ptr());
         match aux::raw::luaL_loadfile(self.L, ptr) {
@@ -2985,7 +2989,7 @@ impl<'l> RawState<'l> {
 
     pub unsafe fn dofile(&mut self, filename: Option<&Path>) -> bool {
         #![inline]
-        let cstr = filename.and_then(|s| s.as_os_str().to_cstring());
+        let cstr = filename.and_then(|s| CString::new(s.as_os_str().as_bytes()).ok());
         let name = cstr.map_or(ptr::null(), |c| c.as_ptr());
         aux::raw::luaL_dofile(self.L, name) == 0
     }
@@ -3034,9 +3038,7 @@ impl<'a> Buffer<'a> {
     /// Adds the char `c` as utf-8 bytes to the buffer.
     pub unsafe fn addchar(&mut self, c: char) {
         #![inline]
-        let mut buf = [0u8; 4];
-        let count = c.encode_utf8(&mut buf).unwrap();
-        self.addbytes(&buf[..count]);
+        self.addbytes(c.encode_utf8().as_slice());
     }
 
     /// Adds to the buffer a string of length `n` previously copied to the
