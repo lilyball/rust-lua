@@ -8,7 +8,6 @@
 #![allow(non_snake_case)]
 #![allow(trivial_numeric_casts)] // FIXME: rust-lang/rfcs#1020
 #![feature(unicode)]
-#![feature(unsafe_no_drop_flag,filling_drop)]
 
 extern crate libc;
 
@@ -244,7 +243,6 @@ impl fmt::Debug for PCallError {
 ///
 /// Note that it is completely unsafe to pass a reference to State to a
 /// function that is executing in a protected scope. Use ExternState for that.
-#[unsafe_no_drop_flag]
 #[repr(C)]
 pub struct State {
     L: *mut raw::lua_State,
@@ -254,7 +252,7 @@ pub struct State {
 
 impl Drop for State {
     fn drop(&mut self) {
-        if !self.L.is_null() && self.L as usize != mem::POST_DROP_USIZE {
+        if !self.L.is_null() {
             unsafe {
                 raw::lua_close(self.L);
             }
