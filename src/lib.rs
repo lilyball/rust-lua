@@ -8,7 +8,6 @@
 #![allow(non_snake_case)]
 #![allow(trivial_numeric_casts)] // FIXME: rust-lang/rfcs#1020
 #![feature(unicode)]
-#![feature(unsafe_no_drop_flag,filling_drop)]
 
 extern crate libc;
 
@@ -244,7 +243,6 @@ impl fmt::Debug for PCallError {
 ///
 /// Note that it is completely unsafe to pass a reference to State to a
 /// function that is executing in a protected scope. Use ExternState for that.
-#[unsafe_no_drop_flag]
 #[repr(C)]
 pub struct State {
     L: *mut raw::lua_State,
@@ -254,7 +252,7 @@ pub struct State {
 
 impl Drop for State {
     fn drop(&mut self) {
-        if !self.L.is_null() && self.L as usize != mem::POST_DROP_USIZE {
+        if !self.L.is_null() {
             unsafe {
                 raw::lua_close(self.L);
             }
@@ -268,7 +266,6 @@ impl Drop for State {
 ///
 /// See State for more information.
 // NB: layout must be identical to State
-// If Drop is ever implemented, add unsafe_no_drop_flag
 #[repr(C)]
 pub struct ExternState<'a> {
     L: *mut raw::lua_State,
@@ -280,7 +277,6 @@ pub struct ExternState<'a> {
 /// functions eschew safety in favor of speed. Like ExternState, all
 /// error-throwing functions are assumed to be using longjmp.
 // NB: layout must be identical to State
-// If Drop is ever implemented, add unsafe_no_drop_flag
 #[repr(C)]
 pub struct RawState<'a> {
     L: *mut raw::lua_State,
@@ -3042,7 +3038,8 @@ impl<'a> Buffer<'a> {
     /// Adds the char `c` as utf-8 bytes to the buffer.
     pub unsafe fn addchar(&mut self, c: char) {
         #![inline]
-        self.addbytes(c.encode_utf8().as_slice());
+        let mut buf = [0; 4];
+        self.addstring(c.encode_utf8(&mut buf));
     }
 
     /// Adds to the buffer a string of length `n` previously copied to the
