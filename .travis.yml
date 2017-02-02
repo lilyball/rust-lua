@@ -1,13 +1,11 @@
 language: rust
-rust: nightly
-env:
-  global:
-    - secure: cXo6ZNWvMmnxZLx72uBoHVQg9/JaBI3KQpEIEOJgP4LTlgKGCjsFqptN9R+r7tLbobo1Vnz525iQCxSSkKFBw7TRunvaB8UJLeYRug8VBwiwvBWyfiHA/sVhLhwYKnZcpRc0dt4gb6BbkjZCRUku1HgnNp5348KGhqiQJy35nLg=
+rust:
+  - stable
+  - beta
+  - nightly
+matrix:
+  allow_failures:
+    - rust: nightly
 install:
   - sudo apt-get install liblua5.1-0-dev
-script:
-  - cargo build
-  - cargo test
-  - cargo doc --no-deps
-after_script:
-  - curl http://www.rust-ci.org/artifacts/put?t=$RUSTCI_TOKEN | sh
+script: make all
