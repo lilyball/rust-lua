@@ -7,7 +7,6 @@
 #![warn(missing_docs)]
 #![allow(non_snake_case)]
 #![allow(trivial_numeric_casts)] // FIXME: rust-lang/rfcs#1020
-#![feature(unicode)]
 
 extern crate libc;
 
