@@ -1,8 +1,8 @@
 # rust-lua
 
-[![Build Status](https://travis-ci.org/kballard/rust-lua.svg)](https://travis-ci.org/kballard/rust-lua)
+[![Build Status](https://travis-ci.org/lilyball/rust-lua.svg)](https://travis-ci.org/lilyball/rust-lua)
 
-Copyright 2014 Kevin Ballard
+Copyright 2014 Lily Ballard
 
 ## Description
 
